@@ -41,8 +41,8 @@
 --this exception also makes it possible to release a modified version 
 
 
-
 --Children folder includes
+includeFile("tangible/loot/loot_schematic/idlootschem/idserverobjects.lua")
 
 -- Server Objects
 includeFile("tangible/loot/loot_schematic/agitator_motor_schematic.lua")
