@@ -31,6 +31,7 @@ bh_mercenary_sentry = Creature:new {
 	lootGroups = {
 		{
 			groups = {
+				{group = "bounty_hunter_schemes", chance = 1500000},
 				{group = "junk", chance = 2500000},
 				{group = "tailor_components", chance = 500000},
 				{group = "loot_kit_parts", chance = 500000},

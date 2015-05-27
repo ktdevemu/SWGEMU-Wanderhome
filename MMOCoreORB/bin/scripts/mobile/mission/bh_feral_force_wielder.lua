@@ -39,6 +39,7 @@ bh_feral_force_wielder = Creature:new {
 				{group = "wearables_all", chance = 1000000},
 				{group = "weapons_all", chance = 1000000},
 				{group = "armor_all", chance = 1000000},
+				{group = "bounty_hunter_schemes", chance = 1500000},
 				{group = "clothing_attachments", chance = 1000000},
 				{group = "armor_attachments", chance = 1000000}
 			},

@@ -30,6 +30,7 @@ bh_untrained_wielder_of_the_dark_side = Creature:new {
 	lootGroups = {
 		{
 			groups = {
+				{group = "bounty_hunter_schemes", chance = 1000000},
 				{group = "junk", chance = 2500000},
 				{group = "tailor_components", chance = 500000},
 				{group = "loot_kit_parts", chance = 500000},

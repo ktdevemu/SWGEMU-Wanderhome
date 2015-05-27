@@ -31,6 +31,7 @@ bh_nightsister_outcast = Creature:new {
 		{
 			groups = {
 				{group = "junk", chance = 2500000},
+				{group = "bounty_hunter_schemes", chance = 700000},
 				{group = "tailor_components", chance = 500000},
 				{group = "loot_kit_parts", chance = 500000},
 				{group = "color_crystals", chance = 500000},
