@@ -1117,6 +1117,7 @@ includeFile("items/named_crystals/strength_of_luminara_crystal.lua")
 includeFile("items/named_crystals/sunriders_destiny_crystal.lua")
 includeFile("items/named_crystals/ulics_redemption_crystal.lua")
 includeFile("items/named_crystals/windus_guile_crystal.lua")
+includeFile("items/force_special_crystal.lua")
 
 -- Custom data
 --AV21 Loot
