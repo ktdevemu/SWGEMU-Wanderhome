@@ -836,3 +836,8 @@ includeFile("weapon/ranged/objects.lua")
 includeFile("weapon/trap/objects.lua")
 includeFile("weapon/objects.lua")
 
+--ID includes
+includeFile("building/player/idhouses/objects.lua")
+includeFile("tangible/deed/player_house_deed/iddeeds/objects.lua")
+includeFile("tangible/loot/loot_schematic/idlootschem/idobjects.lua")
+includeFile("draft_schematic/structure/idschem/idobjects.lua")
