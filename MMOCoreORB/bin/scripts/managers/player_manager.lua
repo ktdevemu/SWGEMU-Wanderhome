@@ -45,10 +45,10 @@
 -----------------------------------
 
 --Blue frog / GM buff values
-performanceBuff = 1000
-medicalBuff = 1900
-performanceDuration = 7200 -- in seconds
-medicalDuration = 7200 -- in seconds
+performanceBuff = 1800
+medicalBuff = 2500
+performanceDuration = 86400 -- in seconds
+medicalDuration = 86400 -- in seconds
 
 --Sets the experience multiplier while grouped
 groupExpMultiplier = 1.2
@@ -61,8 +61,8 @@ globalExpMultiplier = 1.0
 baseStoredCreaturePets = 2
 baseStoredFactionPets = 3
 baseStoredDroids = 5
-baseStoredVehicles = 3
-baseStoredShips = 3
+baseStoredVehicles = 5
+baseStoredShips = 5
 
 -----------------------------------
 --VETERAN REWARDS CONFIG

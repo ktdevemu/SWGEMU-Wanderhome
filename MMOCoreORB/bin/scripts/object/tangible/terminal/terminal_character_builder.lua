@@ -1624,6 +1624,20 @@ object_tangible_terminal_terminal_character_builder = object_tangible_terminal_s
 				"Backpacks",
 				{
 					"Backpack 01", "object/tangible/wearables/backpack/backpack_s01.iff"
+				},
+				"Jedi Robes",
+				{
+					"Padawan Robe", "object/tangible/wearables/robe/robe_jedi_padawan.iff",
+					"Light 1 Robe", "object/tangible/wearables/robe/robe_jedi_light_s01.iff",
+					"Light 2 robe", "object/tangible/wearables/robe/robe_jedi_light_s02.iff",
+					"Light 3 Robe", "object/tangible/wearables/robe/robe_jedi_light_s03.iff",
+					"Light 4 Robe", "object/tangible/wearables/robe/robe_jedi_light_s04.iff",
+					"Light 5 Robe", "object/tangible/wearables/robe/robe_jedi_light_s05.iff",
+					"Dark 1 Robe", "object/tangible/wearables/robe/robe_jedi_dark_s01.iff",
+					"Dark 2 Robe", "object/tangible/wearables/robe/robe_jedi_dark_s02.iff",
+					"Dark 3 Robe", "object/tangible/wearables/robe/robe_jedi_dark_s03.iff",
+					"Dark 4 Robe", "object/tangible/wearables/robe/robe_jedi_dark_s04.iff",
+					"Dark 5 Robe", "object/tangible/wearables/robe/robe_jedi_dark_s05.iff"
 				}
 			},
 			--"Consumables",
@@ -1795,10 +1809,11 @@ object_tangible_terminal_terminal_character_builder = object_tangible_terminal_s
 				"Vehicle Deeds",
 				{
 					"Swoop", "object/tangible/deed/vehicle_deed/speederbike_swoop_deed.iff",
-					--"Jetpack", "object/tangible/deed/vehicle_deed/jetpack_deed.iff",
+					"Jetpack", "object/tangible/deed/vehicle_deed/jetpack_deed.iff",
 					"Speederbike", "object/tangible/deed/vehicle_deed/speederbike_deed.iff",
-					--"Speederbike Flash", "object/tangible/deed/vehicle_deed/speederbike_flash_deed.iff",
-					--"Landspeeder av21", "object/tangible/deed/vehicle_deed/landspeeder_av21_deed.iff",
+					"Speederbike Flash", "object/tangible/deed/vehicle_deed/speederbike_flash_deed.iff",
+					"Landspeeder av21", "object/tangible/deed/vehicle_deed/landspeeder_av21_deed.iff",
+					"BARC Speeder", "object/tangible/deed/vehicle_deed/barc_speeder_deed.iff"
 					--"Landspeeder x31", "object/tangible/deed/vehicle_deed/landspeeder_x31_deed.iff",
 					--"Landspeeder x34", "object/tangible/deed/vehicle_deed/landspeeder_x34_deed.iff"
 				},
@@ -2022,6 +2037,27 @@ object_tangible_terminal_terminal_character_builder = object_tangible_terminal_s
 							"Small Tatooine Garden (Style 4)", "object/tangible/deed/city_deed/garden_tatooine_sml_04_deed.iff",
 							"Small Tatooine Garden (Style 5)", "object/tangible/deed/city_deed/garden_tatooine_sml_05_deed.iff"
 						}
+					},
+					"NGE Special Houses",
+					{
+					"AT-AT House Deed", "object/tangible/deed/player_house_deed/atat_house_deed.iff",
+					--"Diner Deed", "object/tangible/deed/player_house_deed/diner_no_planet_restriction_deed.iff",
+					"Emperor House Deed", "object/tangible/deed/player_house_deed/emperors_house_deed.iff",
+					"Hangar House Deed", "object/tangible/deed/player_house_deed/hangar_house_deed.iff",
+					"Jabba House Deed", "object/tangible/deed/player_house_deed/jabbas_house_deed.iff",
+					"Jedi House Deed", "object/tangible/deed/player_house_deed/jedi_house_deed.iff",
+					"Musty House Deed", "object/tangible/deed/player_house_deed/musty_house_deed.iff",
+					"Nightsister Hut Deed", "object/tangible/deed/player_house_deed/ns_hut_deed.iff",
+					"Rebel House Deed", "object/tangible/deed/player_house_deed/rebel_house_deed.iff",
+					"Relaxation House Deed", "object/tangible/deed/player_house_deed/relaxation_house_deed.iff",
+					"Sandcrawler House Deed", "object/tangible/deed/player_house_deed/sandcrawler_house_deed.iff",
+					"Sith House Deed", "object/tangible/deed/player_house_deed/sith_house_deed.iff",
+					"Small Hut Deed", "object/tangible/deed/player_house_deed/sm_hut_deed.iff",
+					"Tree House Deed", "object/tangible/deed/player_house_deed/tree_house_deed.iff",
+					"Vehicle House Deed", "object/tangible/deed/player_house_deed/vehicle_house_deed.iff",
+					"VIP Bunker Deed", "object/tangible/deed/player_house_deed/vipbunker_house_deed.iff",
+					"Yoda House Deed", "object/tangible/deed/player_house_deed/yoda_house_deed.iff",
+					"YT-1300 House Deed", "object/tangible/deed/player_house_deed/yt1300_house_deed.iff"
 					}
 				},
 				"Event Perk Deeds",
