@@ -23,9 +23,6 @@ public:
 		if (!checkInvalidLocomotions(creature))
 			return INVALIDLOCOMOTION;
 
-		if (creature == NULL)
-			return GENERALERROR;
-
 		if (!creature->hasSkill("outdoors_squadleader_defense_01")) {
 //			StringIdChatParameter params("@error_message:prose_nsf_skill_cmd"); //You lack sufficient skill to use the %TO command.	
 //			params.setTO("@skl_n:" + skill->getSkillName());
@@ -49,10 +46,10 @@ public:
 		}
 		
         if(message.isEmpty()) {
-            playerObject->removeCommandMessageString(String("formup").hashCode());
+            playerObject->removeCommandMessageString(STRING_HASHCODE("formup"));
 			player->sendSystemMessage("Your Formup message has been removed.");
 		} else {
-            playerObject->setCommandMessageString(String("formup").hashCode(), message);
+            playerObject->setCommandMessageString(STRING_HASHCODE("formup"), message);
 			player->sendSystemMessage("Your Formup message was set to :-\n" + message);
 		}
 		return SUCCESS;

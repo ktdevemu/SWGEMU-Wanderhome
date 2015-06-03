@@ -23,9 +23,6 @@ public:
 		if (!checkInvalidLocomotions(creature))
 			return INVALIDLOCOMOTION;
 
-		if ( creature == NULL)
-			return GENERALERROR;
-
 		UnicodeTokenizer tokenizer(arguments);
 		tokenizer.setDelimeter(" ");
 
@@ -45,7 +42,7 @@ public:
 
 			objectID = tokenizer.getLongToken();
 
-		} catch ( Exception err) {
+		} catch (Exception& err) {
 			creature->sendSystemMessage("Error parsing objectID: " +  err.getMessage());
 			return INVALIDPARAMETERS;
 
@@ -106,7 +103,7 @@ private:
 				uint32 serverObjectCRC;
 				String className;
 
-				if (Serializable::getVariable<String>(String("_className").hashCode(), &className, &objectData)) {
+				if (Serializable::getVariable<String>(STRING_HASHCODE("_className"), &className, &objectData)) {
 
 					msg << endl << "OID: " + String::valueOf(objectID) << endl;
 					msg << "Database: " << db << endl;

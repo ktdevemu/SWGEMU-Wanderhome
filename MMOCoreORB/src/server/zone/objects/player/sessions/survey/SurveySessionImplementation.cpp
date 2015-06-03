@@ -43,7 +43,7 @@ int SurveySessionImplementation::startSession() {
 		return false;
 	}
 
-	surveyer->addActiveSession(SessionFacadeType::SURVEY, _this.get());
+	surveyer->addActiveSession(SessionFacadeType::SURVEY, _this.getReferenceUnsafeStaticCast());
 
 	return true;
 }
@@ -188,7 +188,7 @@ void SurveySessionImplementation::startSample(const String& resname) {
 
 	// Force dismount from creature pets
 	if (surveyer->getParent() != NULL && surveyer->getParent().get()->isPet() ) {
-		surveyer->executeObjectControllerAction(String("dismount").hashCode());
+		surveyer->executeObjectControllerAction(STRING_HASHCODE("dismount"));
 	}
 
 	// Verify dismount was successful

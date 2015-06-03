@@ -70,7 +70,7 @@ void StructureManager::loadPlayerStructures(const String& zoneName) {
 		String zoneReference;
 
 		while (iterator.getNextKeyAndValue(objectID, objectData)) {
-			if (!Serializable::getVariable<String>(String("SceneObject.zone").hashCode(),
+			if (!Serializable::getVariable<String>(STRING_HASHCODE("SceneObject.zone"),
 					&zoneReference, objectData)) {
 				objectData->clear();
 				continue;
@@ -356,7 +356,7 @@ int StructureManager::placeStructureFromDeed(CreatureObject* creature, Structure
 	}
 
 	//Ensure that it is the correct deed, and that it is in a container in the creature's inventory.
-	if (deed == NULL || !deed->isASubChildOf(creature)) {
+	if (!deed->isASubChildOf(creature)) {
 		creature->sendSystemMessage("@player_structure:no_possession"); //You no longer are in possession of the deed for this structure. Aborting construction.
 		return 1;
 	}
@@ -937,8 +937,9 @@ void StructureManager::reportStructureStatus(CreatureObject* creature,
 		InstallationObject* installation = cast<InstallationObject*>(structure);
 
 		float secsRemainingPower = 0.f;
-		if( installation->getSurplusPower() > 0 ){
-			secsRemainingPower = ((float)installation->getSurplusPower() / (float)installation->getBasePowerRate())*3600;
+		float basePowerRate = installation->getBasePowerRate();
+		if((installation->getSurplusPower() > 0) && (basePowerRate != 0)){
+			secsRemainingPower = ((float)installation->getSurplusPower() / (float)basePowerRate)*3600;
 		}
 
 		status->addMenuItem(

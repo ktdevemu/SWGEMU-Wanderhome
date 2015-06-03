@@ -106,8 +106,8 @@ void SlicingSessionImplementation::initalizeSlicingMenu(CreatureObject* pl, Tang
 
 	player->getPlayerObject()->addSuiBox(slicingSuiBox);
 
-	player->addActiveSession(SessionFacadeType::SLICING, _this.get());
-	tangibleObject->addActiveSession(SessionFacadeType::SLICING, _this.get());
+	player->addActiveSession(SessionFacadeType::SLICING, _this.getReferenceUnsafeStaticCast());
+	tangibleObject->addActiveSession(SessionFacadeType::SLICING, _this.getReferenceUnsafeStaticCast());
 
 }
 
@@ -602,12 +602,12 @@ void SlicingSessionImplementation::handleArmorSlice() {
 	switch (sliceSkill) {
 	case 5:
 		min += (sliceType == 0) ? 6 : 5;
-		max += (sliceType == 0) ? 5 : 5;
+		max += 5;
 	case 4:
 		min += (sliceType == 0) ? 0 : 10;
-		max += (sliceType == 0) ? 10 : 10;
+		max += 10;
 	case 3:
-		min += (sliceType == 0) ? 5 : 5;
+		min += 5;
 		max += (sliceType == 0) ? 20 : 30;
 		break;
 	default:
@@ -685,7 +685,7 @@ void SlicingSessionImplementation::handleContainerSlice() {
 	LootManager* lootManager = player->getZoneServer()->getLootManager();
 
 	if (tangibleObject->getGameObjectType() == SceneObjectType::PLAYERLOOTCRATE) {
-		Reference<SceneObject*> containerSceno = player->getZoneServer()->createObject(String("object/tangible/container/loot/loot_crate.iff").hashCode(), 1);
+		Reference<SceneObject*> containerSceno = player->getZoneServer()->createObject(STRING_HASHCODE("object/tangible/container/loot/loot_crate.iff"), 1);
 
 		if (containerSceno == NULL)
 			return;

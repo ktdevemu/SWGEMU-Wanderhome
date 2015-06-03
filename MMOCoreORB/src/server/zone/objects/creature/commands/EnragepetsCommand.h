@@ -24,7 +24,7 @@ public:
 		int cooldownMilli = 300000; // 5 min
 		int durationSec =  60; // 1 min
 		int mindCost = player->calculateCostAdjustment(CreatureAttribute::FOCUS, 100 );
-		unsigned int buffCRC = String("enragePet").hashCode();
+		unsigned int buffCRC = STRING_HASHCODE("enragePet");
 
 		if (!checkStateMask(player))
 			return INVALIDSTATE;
@@ -79,7 +79,7 @@ public:
 					continue;
 
 				// Determine damage bonus (15% of average damage)
-				int damageBonus = ((pet->getDamageMin() + pet->getDamageMax())/2) * 0.15;
+				int damageBonus = (int) ((((float)pet->getDamageMin() + (float)pet->getDamageMax())/2) * 0.15);
 
 				// Determine damage susceptibility (half of damage bonus)
 				int damageSusceptibility = damageBonus / 2;

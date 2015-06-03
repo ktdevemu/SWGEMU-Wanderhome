@@ -69,7 +69,8 @@ int GCWManagerImplementation::reactvationTimer = 300;
 int GCWManagerImplementation::turretAutoFireTimeout = 120;
 int GCWManagerImplementation::maxBasesPerPlayer = 3;
 int GCWManagerImplementation::bonusXP = 15;
-int GCWManagerImplementation::bonusDiscount = 30;
+int GCWManagerImplementation::loserBonus = 0;
+int GCWManagerImplementation::winnerBonus = 30;
 bool GCWManagerImplementation::racialPenaltyEnabled = true;
 bool GCWManagerImplementation::spawnDefenses = true;
 int GCWManagerImplementation::initialVulnerabilityDelay = 0;
@@ -98,9 +99,9 @@ void GCWManagerImplementation::start() {
 	loadLuaConfig();
 
 	// randomize a bit so every zone doesn't run it's check at the same time
-	uint64 timer = (System::random(gcwCheckTimer / 10) + gcwCheckTimer) * 1000;
+	uint64 timer = (uint64)(System::random(gcwCheckTimer / 10) + gcwCheckTimer) * 1000;
 
-	CheckGCWTask* task = new CheckGCWTask(_this.get());
+	CheckGCWTask* task = new CheckGCWTask(_this.getReferenceUnsafeStaticCast());
 	task->schedule(timer);
 
 	initialize();
@@ -132,7 +133,8 @@ void GCWManagerImplementation::loadLuaConfig(){
 	turretAutoFireTimeout = lua->getGlobalInt("turretAutoFireTimeout");
 	maxBasesPerPlayer = lua->getGlobalInt("maxBasesPerPlayer");
 	bonusXP = lua->getGlobalInt("bonusXP");
-	bonusDiscount = lua->getGlobalInt("bonusDiscount");
+	winnerBonus = lua->getGlobalInt("winnerBonus");
+	loserBonus = lua->getGlobalInt("loserBonus");
 	racialPenaltyEnabled = lua->getGlobalInt("racialPenaltyEnabled");
 	initialVulnerabilityDelay = lua->getGlobalInt("initialVulnerabilityDelay");
 	spawnDefenses = lua->getGlobalInt("spawnDefenses");
@@ -284,7 +286,7 @@ void GCWManagerImplementation::scheduleVulnerabilityStart(BuildingObject* buildi
 		return;
 	}
 
-	Reference<Task*> newTask = new StartVulnerabilityTask(_this.get(), building);
+	Reference<Task*> newTask = new StartVulnerabilityTask(_this.getReferenceUnsafeStaticCast(), building);
 	newTask->schedule(llabs(vulnDif));
 	this->addStartTask(building->getObjectID(),newTask);
 
@@ -344,8 +346,8 @@ void GCWManagerImplementation::endVulnerability(BuildingObject* building){
 // back up to date.  usually after a long server down or something
 void GCWManagerImplementation::refreshExpiredVulnerability(BuildingObject* building){
 	DestructibleBuildingDataComponent* baseData = getDestructibleBuildingData( building );
-
-	if(baseData == NULL){
+	if (baseData == NULL){
+		error("ERROR:  could not get base data for base");
 		return;
 	}
 
@@ -387,11 +389,6 @@ void GCWManagerImplementation::refreshExpiredVulnerability(BuildingObject* build
 		Time nStartTime(thisStartTime);
 		nStartTime.addMiliTime(vulnerabilityFrequency*1000);
 		baseData->setNextVulnerableTime(nStartTime);
-
-		if(baseData == NULL){
-			error("ERROR:  could not get base data for base");
-			return;
-		}
 
 		this->initializeNewVulnerability(baseData);
 		bool wasDropped = gcwStartTasks.drop(building->getObjectID());
@@ -469,7 +466,7 @@ void GCWManagerImplementation::scheduleVulnerabilityEnd(BuildingObject* building
 #ifdef GCW_DEBUG
 	info("Scheduling end  vulnerability for " + String::valueOf(endDif));
 #endif
-	Reference<Task*> newTask = new EndVulnerabilityTask(_this.get(), building);
+	Reference<Task*> newTask = new EndVulnerabilityTask(_this.getReferenceUnsafeStaticCast(), building);
 
 	newTask->schedule(llabs(endDif));
 
@@ -496,13 +493,13 @@ void GCWManagerImplementation::scheduleBaseDestruction(BuildingObject* building,
 		Locker block(building);
 
 		StringIdChatParameter destroyMessage("@faction/faction_hq/faction_hq_response:terminal_response40"); // COUNTDOWN INITIATED: estimated time to detonation: %DI minutes.
-		int minutesRemaining = ceil(this->destructionTimer/60);
+		int minutesRemaining = (int) ceil((double)this->destructionTimer / (double)60);
 		destroyMessage.setDI(minutesRemaining);
 		broadcastBuilding(building, destroyMessage);
 		baseData->setState(DestructibleBuildingDataComponent::SHUTDOWNSEQUENCE);
 		block.release();
 
-		Reference<Task*> newTask = new BaseDestructionTask(_this.get(), building);
+		Reference<Task*> newTask = new BaseDestructionTask(_this.getReferenceUnsafeStaticCast(), building);
 		newTask->schedule(60000);
 		this->addDestroyTask(building->getObjectID(),newTask);
 
@@ -586,8 +583,8 @@ void GCWManagerImplementation::doBaseDestruction(BuildingObject* building){
 	}
 
 	// need to lock both.  building must be locked for destroyStructure() and then _this is locked when it calls unregister.
-	Locker locker(_this.get());
-	Locker block(building,_this.get());
+	Locker locker(_this.getReferenceUnsafeStaticCast());
+	Locker block(building,_this.getReferenceUnsafeStaticCast());
 
 	int baseType = building->getFactionBaseType();
 
@@ -662,7 +659,7 @@ void GCWManagerImplementation::unregisterGCWBase(BuildingObject* building){
 void GCWManagerImplementation::performGCWTasks(){
 
 
-	Locker locker(_this.get());
+	Locker locker(_this.getReferenceUnsafeStaticCast());
 
 	if(gcwBaseList.size() == 0) {
 		setRebelBaseCount(0);
@@ -714,7 +711,7 @@ void GCWManagerImplementation::performGCWTasks(){
 	setImperialBaseCount(imperialCheck);
 
 
-	CheckGCWTask* task = new CheckGCWTask(_this.get());
+	CheckGCWTask* task = new CheckGCWTask(_this.getReferenceUnsafeStaticCast());
 	task->schedule(this->gcwCheckTimer * 1000);
 }
 
@@ -755,14 +752,14 @@ void GCWManagerImplementation::registerGCWBase(BuildingObject* building, bool in
 
 			if( delay == 0) {
 
-				Locker gLock(_this.get(), ownerCreature);
+				Locker gLock(_this.getReferenceUnsafeStaticCast(), ownerCreature);
 				this->addBase(building);
 				this->startVulnerability(building);
 
 			} 	else {
 
-				Locker cLock(_this.get(), ownerCreature);
-				Reference<Task*> newTask = new StartVulnerabilityTask(_this.get(), building);
+				Locker cLock(_this.getReferenceUnsafeStaticCast(), ownerCreature);
+				Reference<Task*> newTask = new StartVulnerabilityTask(_this.getReferenceUnsafeStaticCast(), building);
 				newTask->schedule(delay * 1000);
 				this->addStartTask(building->getObjectID(),newTask);
 
@@ -978,7 +975,7 @@ void GCWManagerImplementation::resetVulnerability(CreatureObject* creature, Buil
 
 	clock.release();
 
-	Locker glock(_this.get(),creature);
+	Locker glock(_this.getReferenceUnsafeStaticCast(),creature);
 	baseData->setLastVulnerableTime(nextTime);
 
 	nextTime.addMiliTime(vulnerabilityFrequency*1000);
@@ -1204,7 +1201,7 @@ void GCWManagerImplementation::sendStatus(BuildingObject* building, CreatureObje
 	if(creature==NULL || baseData == NULL)
 		return;
 
-	uint64 dif = 0;
+	double dif = 0;
 
 	if(isBaseVulnerable(building)) {
 		dif = baseData->getVulnerabilityEndTime().getTime() - time(0);
@@ -1212,11 +1209,11 @@ void GCWManagerImplementation::sendStatus(BuildingObject* building, CreatureObje
 		dif = baseData->getNextVulnerableTime().getTime() - time(0);
 	}
 
-	int days = floor(dif/86400);
+	int days = (int) floor(dif / 86400.f);
 	dif = dif - (days*86400);
-	int hours = floor(dif/3600);
-	dif = dif - (hours*3600);
-	int minutes = ceil(dif/60);
+	int hours = (int) floor(dif / 3600.f);
+	dif = dif - (hours * 3600);
+	int minutes = (int) ceil(dif / 60.f);
 
 	if(!(building->getPvpStatusBitmask() & CreatureFlag::OVERT)) {
 		creature->sendSystemMessage("PvE base is always vulnerable");
@@ -1732,15 +1729,12 @@ void GCWManagerImplementation::sendDNASampleMenu(CreatureObject* creature, Build
 void GCWManagerImplementation::processDNASample(CreatureObject* creature, TangibleObject* overrideTerminal, const String& sampleChain, const int indx){
 	ManagedReference<BuildingObject*> building = cast<BuildingObject*>(overrideTerminal->getParentRecursively(SceneObjectType::FACTIONBUILDING).get().get());
 
-	if (building == NULL)
+	if (building == NULL || creature == NULL)
 		return;
 
 	DestructibleBuildingDataComponent* baseData = getDestructibleBuildingData( building );
 
-	if(creature==NULL || baseData == NULL)
-			return;
-
-	if(baseData == NULL){
+	if (baseData == NULL) {
 		error("ERROR:  could not get base data for base");
 		return;
 	}
@@ -1928,20 +1922,18 @@ void GCWManagerImplementation::notifyInstallationDestruction(InstallationObject*
 		Locker _lock(installation);
 		Locker clock(building, installation);
 
-		DestructibleBuildingDataComponent* baseData = getDestructibleBuildingData(building);
-
-		if(baseData != NULL){
-			if(building->containsChildObject(installation)){
-				//info("removed child",true);
-				building->getChildObjects()->removeElement(installation);
-			}
+		if(building->containsChildObject(installation)){
+			//info("removed child",true);
+			building->getChildObjects()->removeElement(installation);
 		}
 
-		if( baseData->hasTurret(installation->getObjectID())){
+		DestructibleBuildingDataComponent* baseData = getDestructibleBuildingData(building);
+
+		if (baseData != NULL && baseData->hasTurret(installation->getObjectID())){
 			if(installation->isTurret())
 				notifyTurretDestruction(building, installation);
 
-		} else if (baseData->hasMinefield(installation->getObjectID())){
+		} else if (baseData != NULL && baseData->hasMinefield(installation->getObjectID())){
 
 			if (installation->isMinefield())
 				notifyMinefieldDestruction(building, installation);
@@ -2311,10 +2303,8 @@ void GCWManagerImplementation::performDonateMinefield(BuildingObject* building, 
 
 		block.release();
 
-		if(deed != NULL) {
-			Locker clock(deed, creature);
-			deed->destroyObjectFromWorld(true);
-		}
+		Locker clock(deed, creature);
+		deed->destroyObjectFromWorld(true);
 	}
 }
 
@@ -2382,10 +2372,8 @@ void GCWManagerImplementation::performDonateTurret(BuildingObject* building, Cre
 		verifyTurrets(building);
 		block.release();
 
-		if(turretDeed != NULL) {
-			Locker clock(turretDeed, creature);
-			turretDeed->destroyObjectFromWorld(true);
-		}
+		Locker clock(turretDeed, creature);
+		turretDeed->destroyObjectFromWorld(true);
 	}
 }
 
@@ -2418,8 +2406,7 @@ uint64 GCWManagerImplementation::addChildInstallationFromDeed(BuildingObject* bu
 
 	TangibleObject* tano = cast<TangibleObject*>(obj.get());
 
-	if(tano != NULL)
-		tano->setFaction(building->getFaction());
+	tano->setFaction(building->getFaction());
 
 	tano->setPvpStatusBitmask(building->getPvpStatusBitmask() | tano->getPvpStatusBitmask());
 
@@ -2626,13 +2613,18 @@ void GCWManagerImplementation::awardSlicingXP(CreatureObject* creature,  const S
 
 
 // returns a cost multiplier for faction items
-// includes racial penalty and gcwdiscount
+// includes racial penalty and Bonus&Penality for Loser and Winner side
 float GCWManagerImplementation::getGCWDiscount(CreatureObject* creature){
 
 	float discount = 1.0f;
 
-	if(getWinningFaction() != 1 && getWinningFaction() != creature->getFaction() && creature->getFaction() != 0)
-		 discount -= bonusDiscount/100.f;
+  	if (getWinningFaction() != 1 && creature->getFaction() != 0) {
+  		if (getWinningFaction() == creature->getFaction()){
+  			discount -= winnerBonus /100.f;
+  		}else {
+  			discount -= loserBonus /100.f;
+  		}
+  	}
 
 	if(creature->getFaction() == IMPERIALHASH && racialPenaltyEnabled && getRacialPenalty(creature->getSpecies()) > 0)
 		discount *= getRacialPenalty(creature->getSpecies());

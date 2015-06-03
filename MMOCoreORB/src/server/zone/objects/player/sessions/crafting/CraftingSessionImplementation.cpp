@@ -37,8 +37,8 @@ int CraftingSessionImplementation::initializeSession(CraftingTool* tool, Craftin
 	ManagedReference<CreatureObject*> crafter = this->crafter.get();
 	ManagedReference<CraftingTool*> craftingTool = this->craftingTool.get();
 
-	crafter->addActiveSession(SessionFacadeType::CRAFTING, _this.get());
-	craftingTool->addActiveSession(SessionFacadeType::CRAFTING, _this.get());
+	crafter->addActiveSession(SessionFacadeType::CRAFTING, _this.getReferenceUnsafeStaticCast());
+	craftingTool->addActiveSession(SessionFacadeType::CRAFTING, _this.getReferenceUnsafeStaticCast());
 
 	craftingTool->setCountdownTimer(0, true);
 
@@ -157,7 +157,7 @@ int CraftingSessionImplementation::cancelSession() {
 }
 
 int CraftingSessionImplementation::clearSession() {
-	Locker slocker(_this.get());
+	Locker slocker(_this.getReferenceUnsafeStaticCast());
 
 	ManagedReference<CraftingTool*> craftingTool = this->craftingTool.get();
 	ManagedReference<CreatureObject*> crafter = this->crafter.get();
@@ -711,9 +711,13 @@ void CraftingSessionImplementation::initialAssembly(int clientCounter) {
 
 		// we know that we can only have one component per hardpoint slot, so don't worry about checking them
 		if (visSlot > 0) {
-			uint32 id = ComponentMap::instance()->getVisibleCRC(tanoCRC, visSlot);
-			if (id > 0)
-				prototype->addVisibleComponent(id, false);
+			Vector<uint32> ids = ComponentMap::instance()->getVisibleCRC(tanoCRC, visSlot);
+			int size = ids.size();
+
+			if (size > 0) {
+				int index = System::random(size - 1);
+				prototype->addVisibleComponent(ids.get(index), false);
+			}
 		}
 	}
 

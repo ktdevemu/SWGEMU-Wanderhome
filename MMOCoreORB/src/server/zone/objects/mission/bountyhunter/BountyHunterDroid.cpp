@@ -13,7 +13,10 @@
 
 Reference<Task*> BountyHunterDroid::performAction(int action, SceneObject* droidObject, CreatureObject* player, MissionObject* mission) {
 	if (droidObject == NULL || player == NULL || mission == NULL) {
-		player->sendSystemMessage("@mission/mission_generic:bounty_no_ability"); // You do not understand how to use this item.
+		if (player != NULL) {
+			player->sendSystemMessage("@mission/mission_generic:bounty_no_ability"); // You do not understand how to use this item.
+		}
+
 		return NULL;
 	}
 
@@ -61,7 +64,7 @@ Reference<FindTargetTask*> BountyHunterDroid::findTarget(SceneObject* droidObjec
 		return NULL;
 	}
 
-	ManagedReference<AiAgent*> droid = cast<AiAgent*>(player->getZone()->getCreatureManager()->spawnCreature(String("seeker").hashCode(), 0, player->getPositionX(), player->getPositionZ(), player->getPositionY(), 0));
+	ManagedReference<AiAgent*> droid = cast<AiAgent*>(player->getZone()->getCreatureManager()->spawnCreature(STRING_HASHCODE("seeker"), 0, player->getPositionX(), player->getPositionZ(), player->getPositionY(), 0));
 	droid->activateLoad("stationary");
 
 	Reference<FindTargetTask*> findTargetTask = new FindTargetTask(droid, player, objective, track, false);

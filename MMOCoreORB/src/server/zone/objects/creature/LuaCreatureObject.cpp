@@ -16,6 +16,7 @@
 #include "server/zone/objects/player/sessions/EntertainingSession.h"
 #include "server/zone/objects/player/PlayerObject.h"
 #include "server/zone/managers/player/PlayerManager.h"
+#include "server/zone/managers/skill/SkillManager.h"
 
 const char LuaCreatureObject::className[] = "LuaCreatureObject";
 
@@ -67,6 +68,7 @@ Luna<LuaCreatureObject>::RegType LuaCreatureObject::Register[] = {
 		{ "setMoodString", &LuaCreatureObject::setMoodString},
 		{ "hasSkill", &LuaCreatureObject::hasSkill},
 		{ "removeSkill", &LuaCreatureObject::removeSkill},
+		{ "surrenderSkill", &LuaCreatureObject::surrenderSkill},
 		{ "getConversationSession", &LuaCreatureObject::getConversationSession},
 		{ "doAnimation", &LuaCreatureObject::doAnimation},
 		{ "engageCombat", &LuaCreatureObject::engageCombat},
@@ -91,7 +93,9 @@ Luna<LuaCreatureObject>::RegType LuaCreatureObject::Register[] = {
 		{ "getGroupSize", &LuaCreatureObject::getGroupSize},
 		{ "getGroupMember", &LuaCreatureObject::getGroupMember},
 		{ "setOptionsBitmask", &LuaCreatureObject::setOptionsBitmask},
-		{ "setPvpStatusBitmask", &LuaCreatureObject::setPvpStatusBitmask},
+		{ "setPvpStatusBitmask", &LuaTangibleObject::setPvpStatusBitmask},
+		{ "setPvpStatusBit", &LuaTangibleObject::setPvpStatusBit},
+		{ "isChangingFactionStatus", &LuaTangibleObject::isChangingFactionStatus },
 		{ "addDotState", &LuaCreatureObject::addDotState},
 		{ "getSlottedObject", &LuaSceneObject::getSlottedObject},
 		{ "checkCooldownRecovery", &LuaCreatureObject::checkCooldownRecovery},
@@ -115,7 +119,7 @@ Luna<LuaCreatureObject>::RegType LuaCreatureObject::Register[] = {
 		{ 0, 0 }
 };
 
-LuaCreatureObject::LuaCreatureObject(lua_State *L) : LuaSceneObject(L) {
+LuaCreatureObject::LuaCreatureObject(lua_State *L) : LuaTangibleObject(L) {
 #ifdef DYNAMIC_CAST_LUAOBJECTS
 	realObject = dynamic_cast<CreatureObject*>(_getRealSceneObject());
 
@@ -129,7 +133,7 @@ LuaCreatureObject::~LuaCreatureObject(){
 }
 
 int LuaCreatureObject::_setObject(lua_State* L) {
-	LuaSceneObject::_setObject(L);
+	LuaTangibleObject::_setObject(L);
 
 #ifdef DYNAMIC_CAST_LUAOBJECTS
 	realObject = dynamic_cast<CreatureObject*>(_getRealSceneObject());
@@ -198,13 +202,6 @@ int LuaCreatureObject::setMoodString(lua_State* L) {
 	Locker locker(realObject);
 
 	realObject->setMoodString(value);
-
-	return 0;
-}
-
-int LuaCreatureObject::setPvpStatusBitmask(lua_State* L) {
-	int bitmask = lua_tonumber(L, -1);
-	realObject->setPvpStatusBitmask(bitmask, true);
 
 	return 0;
 }
@@ -372,6 +369,15 @@ int LuaCreatureObject::removeSkill(lua_State* L) {
 	realObject->removeSkill(value, true);
 	return 0;
 }
+
+int LuaCreatureObject::surrenderSkill(lua_State* L) {
+	String value = lua_tostring(L, -1);
+
+	SkillManager* skillManager = SkillManager::instance();
+	skillManager->surrenderSkill(value, realObject, true);
+	return 0;
+}
+
 
 int LuaCreatureObject::getInCellNumber(lua_State* L) {
 	SceneObject* parent = realObject->getParent().get().get();
@@ -819,8 +825,8 @@ int LuaCreatureObject::isDroidPet(lua_State* L) {
 }
 
 int LuaCreatureObject::isCombatDroidPet(lua_State* L) {
-	bool retVal = realObject->isDroidObject() && realObject->isPet();
-	if (retVal) {
+	bool retVal = false;
+	if (realObject->isDroidObject() && realObject->isPet()) {
 		DroidObject* d = cast<DroidObject*>(realObject);
 		retVal = d->isCombatDroid();
 	}

@@ -22,9 +22,6 @@ public:
 
 		if (!checkInvalidLocomotions(creature))
 			return INVALIDLOCOMOTION;
-
-		if (creature == NULL)
-			return GENERALERROR;
 			
 		if (!creature->hasSkill("outdoors_squadleader_defense_04")) {
 //			StringIdChatParameter params("@error_message:prose_nsf_skill_cmd"); //You lack sufficient skill to use the %TO command.	
@@ -49,10 +46,10 @@ public:
 		}
 		
         if(message.isEmpty()) {
-            playerObject->removeCommandMessageString(String("boostmorale").hashCode());
+            playerObject->removeCommandMessageString(STRING_HASHCODE("boostmorale"));
 			player->sendSystemMessage("Your Boostmorale message has been removed.");
 		} else {
-            playerObject->setCommandMessageString(String("boostmorale").hashCode(), message);
+            playerObject->setCommandMessageString(STRING_HASHCODE("boostmorale"), message);
 			player->sendSystemMessage("Your Boostmorale message was set to :-\n" + message);
 		}
 		

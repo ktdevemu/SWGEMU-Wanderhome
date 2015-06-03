@@ -114,7 +114,7 @@ int FishingManagerImplementation::startFishing(CreatureObject* player) {
 
 	player->sendSystemMessage("@fishing:start_fishing");
 
-	player->registerObserver(ObserverEventType::POSITIONCHANGED, _this.get());
+	player->registerObserver(ObserverEventType::POSITIONCHANGED, _this.getReferenceUnsafeStaticCast());
 
 	return 0;
 }
@@ -161,7 +161,7 @@ void FishingManagerImplementation::stopFishing(CreatureObject* player, uint32 bo
 
 	player->sendSystemMessage("@fishing:stop_fishing");
 
-	player->dropObserver(ObserverEventType::POSITIONCHANGED, _this.get());
+	player->dropObserver(ObserverEventType::POSITIONCHANGED, _this.getReferenceUnsafeStaticCast());
 }
 
 
@@ -599,7 +599,7 @@ uint32 FishingManagerImplementation::createWindow(CreatureObject* player, uint32
 void FishingManagerImplementation::closeMenu(CreatureObject* player, uint32 boxID) {
 	PlayerObject* ghost = player->getPlayerObject();
 
-	if(player != NULL) {
+	if(ghost != NULL) {
 		ghost->removeSuiBoxType(SuiWindowType::FISHING);
 	}
 }
@@ -696,7 +696,7 @@ FishingBaitObject* FishingManagerImplementation::getBait(CreatureObject* player)
 	if (player == NULL)
 		return NULL;
 
-	Locker locker(_this.get());
+	Locker locker(_this.getReferenceUnsafeStaticCast());
 
 	ManagedReference<FishingPoleObject*> pole = getPole(player);
 
@@ -1018,7 +1018,7 @@ SceneObject* FishingManagerImplementation::createMarker(float x, float y, float 
 	//markerObject->insertToZone(zone);
 	zone->transferObject(markerObject, -1, true);
 
-	markerObject->registerObserver(ObserverEventType::CLOSECONTAINER, _this.get());
+	markerObject->registerObserver(ObserverEventType::CLOSECONTAINER, _this.getReferenceUnsafeStaticCast());
 
 	return markerObject;
 }

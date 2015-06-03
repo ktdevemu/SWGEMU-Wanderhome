@@ -500,10 +500,9 @@ bool PlayerManagerImplementation::checkPlayerName(MessageCallback* messageCallba
 void PlayerManagerImplementation::createTutorialBuilding(CreatureObject* player) {
 	Zone* zone = server->getZone("tutorial");
 
-	String tut = "object/building/general/newbie_hall.iff";
-	String cell = "object/cell/cell.iff";
+//	const static String cell = "object/cell/cell.iff";
 
-	Reference<BuildingObject*> tutorial = server->createObject(tut.hashCode(), 1).castTo<BuildingObject*>();
+	Reference<BuildingObject*> tutorial = server->createObject(STRING_HASHCODE("object/building/general/newbie_hall.iff"), 1).castTo<BuildingObject*>();
 
 	Locker locker(tutorial);
 
@@ -532,10 +531,7 @@ void PlayerManagerImplementation::createTutorialBuilding(CreatureObject* player)
 void PlayerManagerImplementation::createSkippedTutorialBuilding(CreatureObject* player) {
 	Zone* zone = server->getZone("tutorial");
 
-	String tut = "object/building/general/newbie_hall_skipped.iff";
-	String cell = "object/cell/cell.iff";
-
-	Reference<BuildingObject*> tutorial = server->createObject(tut.hashCode(), 1).castTo<BuildingObject*>();
+	Reference<BuildingObject*> tutorial = server->createObject(STRING_HASHCODE("object/building/general/newbie_hall_skipped.iff"), 1).castTo<BuildingObject*>();
 
 	Locker locker(tutorial);
 
@@ -545,7 +541,7 @@ void PlayerManagerImplementation::createSkippedTutorialBuilding(CreatureObject* 
 
 	locker.release();
 
-	Reference<SceneObject*> travelTutorialTerminal = server->createObject((uint32)String("object/tangible/beta/beta_terminal_warp.iff").hashCode(), 1);
+	Reference<SceneObject*> travelTutorialTerminal = server->createObject(STRING_HASHCODE("object/tangible/beta/beta_terminal_warp.iff"), 1);
 
 	SceneObject* cellTut = tutorial->getCell(1);
 
@@ -613,7 +609,7 @@ int PlayerManagerImplementation::notifyDestruction(TangibleObject* destructor, T
 
 	if (playerCreature->isRidingMount()) {
 		playerCreature->updateCooldownTimer("mount_dismount", 0);
-		playerCreature->executeObjectControllerAction(String("dismount").hashCode());
+		playerCreature->executeObjectControllerAction(STRING_HASHCODE("dismount"));
 	}
 
 	PlayerObject* ghost = playerCreature->getPlayerObject();
@@ -649,12 +645,8 @@ int PlayerManagerImplementation::notifyDestruction(TangibleObject* destructor, T
 
 		StringIdChatParameter stringId;
 
-		if (destructor != NULL) {
-			stringId.setStringId("base_player", "prose_victim_incap");
-			stringId.setTT(destructor->getObjectID());
-		} else {
-			stringId.setStringId("base_player", "victim_incapacitated");
-		}
+		stringId.setStringId("base_player", "prose_victim_incap");
+		stringId.setTT(destructor->getObjectID());
 
 		playerCreature->sendSystemMessage(stringId);
 
@@ -678,7 +670,7 @@ void PlayerManagerImplementation::killPlayer(TangibleObject* attacker, CreatureO
 
 	if (player->isRidingMount()) {
 		player->updateCooldownTimer("mount_dismount", 0);
-		player->executeObjectControllerAction(String("dismount").hashCode());
+		player->executeObjectControllerAction(STRING_HASHCODE("dismount"));
 	}
 
 	player->clearDots();
@@ -1086,10 +1078,10 @@ void PlayerManagerImplementation::disseminateExperience(TangibleObject* destruct
 		uint32 entryTotalDamage = entry->getTotalDamage();
 
 		CreatureObject* attacker = threatMap->elementAt(i).getKey();
-		if (!attacker->isPlayerCreature())
+		if (attacker == NULL || !attacker->isPlayerCreature())
 			continue;
 
-		if (attacker == NULL || (attacker->isPlayerCreature() && !destructedObject->isInRange(attacker, 80)))
+		if (!destructedObject->isInRange(attacker, 80))
 			continue;
 
 		ManagedReference<GroupObject*> group = attacker->getGroup();
@@ -1945,7 +1937,7 @@ int PlayerManagerImplementation::healEnhance(CreatureObject* enhancer, CreatureO
 		}
 	}
 
-	Reference<Buff*> buff = new Buff(patient, buffname.hashCode(), duration, BuffType::MEDICAL);
+	Reference<Buff*> buff = new Buff(patient, buffcrc, duration, BuffType::MEDICAL);
 
 	Locker locker(buff);
 
@@ -2761,6 +2753,9 @@ int PlayerManagerImplementation::checkSpeedHackSecondTest(CreatureObject* player
 			lastValidatedPosition->setParent(0);
 
 		ghost->updateServerLastMovementStamp();
+
+		if (ghost->isOnLoadScreen())
+			ghost->setOnLoadScreen(false);
 	}
 
 	return ret;
@@ -2825,7 +2820,7 @@ void PlayerManagerImplementation::lootAll(CreatureObject* player, CreatureObject
 	for (int i = totalItems - 1; i >= 0; --i) {
 		SceneObject* object = creatureInventory->getContainerObject(i);
 
-		player->executeObjectControllerAction(String("transferitemmisc").hashCode(), object->getObjectID(), stringArgs);
+		player->executeObjectControllerAction(STRING_HASHCODE("transferitemmisc"), object->getObjectID(), stringArgs);
 	}
 
 	if (creatureInventory->getContainerObjectsSize() <= 0) {
@@ -3424,7 +3419,7 @@ void PlayerManagerImplementation::fixBuffSkillMods(CreatureObject* player) {
 		if (grp != NULL)
 			GroupManager::instance()->leaveGroup(grp, player);
 
-		Reference<Buff*> buff = player->getBuff(String("squadleader").hashCode());
+		Reference<Buff*> buff = player->getBuff(STRING_HASHCODE("squadleader"));
 		if (buff != NULL) {
 			Locker locker(buff);
 			player->removeBuff(buff);
@@ -4298,7 +4293,7 @@ void PlayerManagerImplementation::generateVeteranReward(CreatureObject* player )
 
 	// If player is eligible for another reward, kick off selection
 	if( getEligibleMilestone( playerGhost, account ) >= 0 ){
-		player->enqueueCommand(String("claimveteranreward").hashCode(), 0, 0, "");
+		player->enqueueCommand(STRING_HASHCODE("claimveteranreward"), 0, 0, "");
 	}
 }
 
@@ -4526,7 +4521,7 @@ void PlayerManagerImplementation::getCleanupCharacterCount(){
 	int galaxyID = server->getGalaxyID();
 
 	while(iterator.getNextKeyAndValue(objectID, &objectData)){
-		if(Serializable::getVariable<String>(String("_className").hashCode(), &className, &objectData)){
+		if(Serializable::getVariable<String>(STRING_HASHCODE("_className"), &className, &objectData)){
 			if(className == "CreatureObject"){
 				playerCount++;
 
@@ -4574,7 +4569,7 @@ void PlayerManagerImplementation::cleanupCharacters(){
 	int galaxyID = server->getGalaxyID();
 
 	while(iterator.getNextKeyAndValue(objectID, &objectData) && deletedCount < 400 ){
-		if(Serializable::getVariable<String>(String("_className").hashCode(), &className, &objectData)){
+		if(Serializable::getVariable<String>(STRING_HASHCODE("_className"), &className, &objectData)){
 			if(className == "CreatureObject"){
 				playerCount++;
 
@@ -4651,7 +4646,7 @@ bool PlayerManagerImplementation::doBurstRun(CreatureObject* player, float hamMo
 		return false;
 	}
 
-	if (player->hasBuff(String("gallop").hashCode()) || player->hasBuff(String("burstrun").hashCode()) || player->hasBuff(String("retreat").hashCode())) {
+	if (player->hasBuff(STRING_HASHCODE("gallop")) || player->hasBuff(STRING_HASHCODE("burstrun")) || player->hasBuff(STRING_HASHCODE("retreat"))) {
 		player->sendSystemMessage("@combat_effects:burst_run_no"); // You cannot burst run right now.
 		return false;
 	}
@@ -4681,7 +4676,7 @@ bool PlayerManagerImplementation::doBurstRun(CreatureObject* player, float hamMo
 		return false;
 	}
 
-	uint32 crc = String("burstrun").hashCode();
+	uint32 crc = STRING_HASHCODE("burstrun");
 	float hamCost = 100.0f;
 	float duration = 30;
 	float cooldown = 300;

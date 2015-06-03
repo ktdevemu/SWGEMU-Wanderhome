@@ -103,7 +103,7 @@ public:
 				int arrangementSize = objectToTransfer->getArrangementDescriptorSize();
 
 				if (arrangementSize > 0) {
-					String childArrangement = objectToTransfer->getArrangementDescriptor(0).get(0);
+					const String& childArrangement = objectToTransfer->getArrangementDescriptor(0)->get(0);
 
 					ManagedReference<SceneObject*> objectToRemove = destinationObject->getSlottedObject(childArrangement);
 
@@ -144,8 +144,8 @@ public:
 
 						PlayerObject* ghost = playerCreature->getPlayerObject();
 
-						if (creature->hasBuff(String("centerofbeing").hashCode()))
-							creature->removeBuff(String("centerofbeing").hashCode());
+						if (creature->hasBuff(STRING_HASHCODE("centerofbeing")))
+							creature->removeBuff(STRING_HASHCODE("centerofbeing"));
 
 						ManagedReference<PlayerManager*> playerManager = creature->getZoneServer()->getPlayerManager();
 						if (playerManager != NULL) {

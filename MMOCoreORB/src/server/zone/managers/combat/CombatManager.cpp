@@ -48,7 +48,7 @@ bool CombatManager::startCombat(CreatureObject* attacker, TangibleObject* defend
 		if (parent == NULL || !parent->isMount())
 			return false;
 
-		if (attacker->hasBuff(String("gallop").hashCode()))
+		if (attacker->hasBuff(STRING_HASHCODE("gallop")))
 			return false;
 	}
 
@@ -58,7 +58,7 @@ bool CombatManager::startCombat(CreatureObject* attacker, TangibleObject* defend
 	if (!defender->isAttackableBy(attacker))
 		return false;
 
-	if (defender->isCreatureObject() && (cast<CreatureObject*>(defender))->isIncapacitated())
+	if (defender->isCreatureObject() && defender->asCreatureObject()->isIncapacitated())
 		return false;
 
 	if (attacker->isPlayerCreature() && attacker->getPlayerObject()->isAFK())
@@ -91,7 +91,7 @@ bool CombatManager::attemptPeace(CreatureObject* attacker) {
 			if (defender->hasDefender(attacker)) {
 
 				if (defender->isCreatureObject()) {
-					CreatureObject* creature = cast<CreatureObject*>(defender);
+					CreatureObject* creature = defender->asCreatureObject();
 
 					if (creature->getMainDefender() != attacker || creature->hasState(CreatureState::PEACE) || creature->isDead() || attacker->isDead() || !creature->isInRange(attacker, 128.f)) {
 						attacker->removeDefender(defender);
@@ -226,7 +226,7 @@ int CombatManager::doTargetCombatAction(CreatureObject* attacker, WeaponObject* 
 	tano->addDefender(attacker);
 
 	if (tano->isCreatureObject()) {
-		CreatureObject* defender = cast<CreatureObject*>( tano);
+		CreatureObject* defender = tano->asCreatureObject();
 
 		if (defender->getWeapon() == NULL)
 			return 0;
@@ -310,7 +310,7 @@ int CombatManager::doTargetCombatAction(CreatureObject* attacker, WeaponObject* 
 	case COUNTER: {
 		doCounterAttack(attacker, weapon, defender, damage);
 		if (!defender->hasState(CreatureState::PEACE))
-			defender->executeObjectControllerAction(String("attack").hashCode(), attacker->getObjectID(), "");
+			defender->executeObjectControllerAction(STRING_HASHCODE("attack"), attacker->getObjectID(), "");
 		damageMultiplier = 0.0f;
 		break;}
 	case RICOCHET:
@@ -357,7 +357,7 @@ int CombatManager::doTargetCombatAction(TangibleObject* attacker, WeaponObject* 
 	Locker clocker(tano, attacker);
 
 	if (tano->isCreatureObject()) {
-		CreatureObject* defenderObject = cast<CreatureObject*>( tano);
+		CreatureObject* defenderObject = tano->asCreatureObject();
 
 		if (defenderObject->getWeapon() != NULL)
 			damage = doTargetCombatAction(attacker, weapon, defenderObject, data);
@@ -417,7 +417,7 @@ int CombatManager::doTargetCombatAction(TangibleObject* attacker, WeaponObject* 
 	case COUNTER:
 		doCounterAttack(attacker, weapon, defenderObject, damage);
 		if (!defenderObject->hasState(CreatureState::PEACE))
-			defenderObject->executeObjectControllerAction(String("attack").hashCode(), attacker->getObjectID(), "");
+			defenderObject->executeObjectControllerAction(STRING_HASHCODE("attack"), attacker->getObjectID(), "");
 		damageMultiplier = 0.0f;
 		break;
 	case RICOCHET:
@@ -518,14 +518,12 @@ float CombatManager::getWeaponRangeModifier(float currentRange, WeaponObject* we
 	float smallMod = 7;
 	float bigMod = 7;
 
-	if (weapon != NULL) {
-		minRange = (float) weapon->getPointBlankRange();
-		idealRange = (float) weapon->getIdealRange();
-		maxRange = (float) weapon->getMaxRange();
+	minRange = (float) weapon->getPointBlankRange();
+	idealRange = (float) weapon->getIdealRange();
+	maxRange = (float) weapon->getMaxRange();
 
-		smallMod = (float) weapon->getPointBlankAccuracy();
-		bigMod = (float) weapon->getIdealAccuracy();
-	}
+	smallMod = (float) weapon->getPointBlankAccuracy();
+	bigMod = (float) weapon->getIdealAccuracy();
 
 	if (currentRange >= maxRange)
 		return (float) weapon->getMaxRangeAccuracy();
@@ -539,10 +537,8 @@ float CombatManager::getWeaponRangeModifier(float currentRange, WeaponObject* we
 
 	// check that assumption and correct if it's not true
 	if (currentRange > idealRange) {
-		if (weapon != NULL) {
-			smallMod = (float) weapon->getIdealAccuracy();
-			bigMod = (float) weapon->getMaxRangeAccuracy();
-		} // else retain mod values = 7
+		smallMod = (float) weapon->getIdealAccuracy();
+		bigMod = (float) weapon->getMaxRangeAccuracy();
 
 		smallRange = idealRange;
 		bigRange = maxRange;
@@ -1388,7 +1384,7 @@ int CombatManager::getHitChance(TangibleObject* attacker, CreatureObject* target
 	CreatureObject* creoAttacker = NULL;
 
 	if (attacker->isCreatureObject()) {
-		creoAttacker = cast<CreatureObject*>(attacker);
+		creoAttacker = attacker->asCreatureObject();
 	}
 
 	//info("Calculating hit chance for " + attacker->getDisplayedName(), true);
@@ -1516,28 +1512,28 @@ void CombatManager::doMiss(TangibleObject* attacker, WeaponObject* weapon, Creat
 
 void CombatManager::doCounterAttack(TangibleObject* attacker, WeaponObject* weapon, CreatureObject* defender, int damage) {
 	defender->showFlyText("combat_effects", "counterattack", 0, 0xFF, 0);
-	//defender->doCombatAnimation(defender, String("dodge").hashCode(), 0);
+	//defender->doCombatAnimation(defender, STRING_HASHCODE("dodge"), 0);
 
 }
 
 void CombatManager::doBlock(TangibleObject* attacker, WeaponObject* weapon, CreatureObject* defender, int damage) {
 	defender->showFlyText("combat_effects", "block", 0, 0xFF, 0);
 
-	//defender->doCombatAnimation(defender, String("dodge").hashCode(), 0);
+	//defender->doCombatAnimation(defender, STRING_HASHCODE("dodge"), 0);
 
 }
 
 void CombatManager::doLightsaberBlock(TangibleObject* attacker, WeaponObject* weapon, CreatureObject* defender, int damage) {
 	// No Fly Text.
 
-	//creature->doCombatAnimation(defender, String("test_sword_ricochet").hashCode(), 0);
+	//creature->doCombatAnimation(defender, STRING_HASHCODE("test_sword_ricochet"), 0);
 
 }
 
 void CombatManager::doDodge(TangibleObject* attacker, WeaponObject* weapon, CreatureObject* defender, int damage) {
 	defender->showFlyText("combat_effects", "dodge", 0, 0xFF, 0);
 
-	//defender->doCombatAnimation(defender, String("dodge").hashCode(), 0);
+	//defender->doCombatAnimation(defender, STRING_HASHCODE("dodge"), 0);
 
 }
 
@@ -1800,7 +1796,7 @@ int CombatManager::applyDamage(TangibleObject* attacker, WeaponObject* weapon, C
 
 	// This method can be called multiple times for area attacks.  Let the calling method decrease the powerup once
 	if (!data.getCommand()->isAreaAction() && !data.getCommand()->isConeAction() && attacker->isCreatureObject()) {
-		weapon->decreasePowerupUses(cast<CreatureObject*>(attacker));
+		weapon->decreasePowerupUses(attacker->asCreatureObject());
 	}
 
 	return (int) (healthDamage + actionDamage + mindDamage);
@@ -1946,15 +1942,15 @@ void CombatManager::broadcastCombatAction(CreatureObject * attacker, TangibleObj
 	// TODO: this needs to be fixed.
 	if (attacker->isCreature() && animationCRC == 0) {
 		if (attacker->getGameObjectType() == SceneObjectType::DROIDCREATURE || attacker->getGameObjectType() == SceneObjectType::PROBOTCREATURE)
-			animationCRC = String("droid_attack_light").hashCode();
+			animationCRC = STRING_HASHCODE("droid_attack_light");
 		else if (weapon->isRangedWeapon())
-			animationCRC = String("creature_attack_ranged_light").hashCode();
+			animationCRC = STRING_HASHCODE("creature_attack_ranged_light");
 		else
-			animationCRC = String("creature_attack_light").hashCode();
+			animationCRC = STRING_HASHCODE("creature_attack_light");
 	}
 
 	if (defenderObject->isCreatureObject())
-		combatAction = new CombatAction(attacker, cast<CreatureObject*>(defenderObject), animationCRC, hit, data.getTrails(), weapon->getObjectID());
+		combatAction = new CombatAction(attacker, defenderObject->asCreatureObject(), animationCRC, hit, data.getTrails(), weapon->getObjectID());
 	else
 		combatAction = new CombatAction(attacker, defenderObject, animationCRC, hit, data.getTrails(), weapon->getObjectID());
 
@@ -2269,7 +2265,7 @@ int CombatManager::doAreaCombatAction(CreatureObject* attacker, WeaponObject* we
 				continue;
 			}
 
-			TangibleObject* tano = cast<TangibleObject*>(object.get());
+			TangibleObject* tano = object->asTangibleObject();
 
 			if (object == attacker) {
 				//error("object is attacker");
@@ -2291,7 +2287,7 @@ int CombatManager::doAreaCombatAction(CreatureObject* attacker, WeaponObject* we
 					continue;
 			}
 
-			if (tano->isCreatureObject() && (cast<CreatureObject*>(tano))->isIncapacitated()) {
+			if (tano->isCreatureObject() && tano->asCreatureObject()->isIncapacitated()) {
 				//error("object is incapacitated");
 				continue;
 			}
@@ -2401,7 +2397,7 @@ int CombatManager::doAreaCombatAction(TangibleObject* attacker, WeaponObject* we
 				continue;
 			}
 
-			if (tano->isCreatureObject() && (cast<CreatureObject*>(tano))->isIncapacitated()) {
+			if (tano->isCreatureObject() && tano->asCreatureObject()->isIncapacitated()) {
 				//error("object is incapacitated");
 				continue;
 			}

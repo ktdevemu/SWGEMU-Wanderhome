@@ -95,10 +95,10 @@ bool GCWBaseContainerComponent::checkPVPPermission(BuildingObject* building, Cre
 		return false;
 	}
 
-	creature->sendSystemMessage("unkown reason for entry denial");
+/*	creature->sendSystemMessage("unkown reason for entry denial");
 
 
-	return false;
+	return false;*/
 }
 
 bool GCWBaseContainerComponent::checkPVEPermission(BuildingObject* building, CreatureObject* creature, uint16 permission, bool sendMessage){
@@ -113,21 +113,6 @@ bool GCWBaseContainerComponent::checkPVEPermission(BuildingObject* building, Cre
 			creature->sendSystemMessage("@faction/faction_hq/faction_hq_response:youre_neutral_excluded"); // This is a restricted acces military structure, and yo uhaven't aligned
 
 		return false;
-	}
-
-
-	// if changing status from overt, they have access
-	if(player->getFactionStatus() == FactionStatus::CHANGINGSTATUS){
-		if(creature->getPvpStatusBitmask() & CreatureFlag::OVERT){
-			return true;
-		} else {
-
-			if(sendMessage)
-				creature->sendSystemMessage("You must be at least a combatatant");
-
-			return false;
-		}
-
 	}
 
 	if((player->getFactionStatus() != FactionStatus::COVERT && player->getFactionStatus() != FactionStatus::OVERT)){
@@ -161,9 +146,10 @@ bool GCWBaseContainerComponent::checkPVEPermission(BuildingObject* building, Cre
 
 		return false;
 	}
-	if(sendMessage)
+
+	/*if(sendMessage)
 		creature->sendSystemMessage("unkown reason for entry denial");
 
-	return false;
+	return false;*/
 }
 

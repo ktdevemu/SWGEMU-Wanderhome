@@ -10,7 +10,7 @@
 
 #include "engine/engine.h"
 
-#include "server/zone/objects/scene/LuaSceneObject.h"
+#include "server/zone/objects/tangible/LuaTangibleObject.h"
 
 namespace server {
 namespace zone {
@@ -18,7 +18,7 @@ namespace objects {
 namespace creature {
 	class CreatureObject;
 
-	class LuaCreatureObject : public LuaSceneObject {
+	class LuaCreatureObject : public LuaTangibleObject {
 	public:
 		// Constants
 		static const char className[];
@@ -60,6 +60,7 @@ namespace creature {
 		int getPosture(lua_State* L);
 		int hasSkill(lua_State* L);
 		int removeSkill(lua_State* L);
+		int surrenderSkill(lua_State* L);
 		int getConversationSession(lua_State* L);
 		int doAnimation(lua_State* L);
 		int engageCombat(lua_State* L);
@@ -77,7 +78,6 @@ namespace creature {
 		int subtractCashCredits(lua_State* L);
 		int addCashCredits(lua_State* L);
 		int removeScreenPlayState(lua_State* L);
-		int setPvpStatusBitmask(lua_State* L);
 		int setLootRights(lua_State* L);
 		int isGrouped(lua_State* L);
 		int isGroupedWith(lua_State* L);

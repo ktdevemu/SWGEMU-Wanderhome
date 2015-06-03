@@ -235,7 +235,7 @@ void CreatureObjectImplementation::loadTemplateData(
 		walkAcceleration = 0;
 	}
 
-	Vector<FloatParam> speedTempl = creoData->getSpeed();
+	const Vector<FloatParam>& speedTempl = creoData->getSpeed();
 
 	if (speedTempl.size() > 0) {
 		runSpeed = speedTempl.get(0);
@@ -251,7 +251,7 @@ void CreatureObjectImplementation::finalize() {
 }
 
 void CreatureObjectImplementation::sendTo(SceneObject* player, bool doClose) {
-	if (isInvisible() && player != _this.get())
+	if (isInvisible() && player != asCreatureObject())
 		return;
 
 	TangibleObjectImplementation::sendTo(player, doClose);
@@ -268,7 +268,7 @@ void CreatureObjectImplementation::sendToOwner(bool doClose) {
 	BaseMessage* byteFlag = new unkByteFlag();
 	owner->sendMessage(byteFlag);
 
-	BaseMessage* startScene = new CmdStartScene(_this.get());
+	BaseMessage* startScene = new CmdStartScene(asCreatureObject());
 	owner->sendMessage(startScene);
 
 	BaseMessage* parameters = new ParametersMessage();
@@ -276,45 +276,49 @@ void CreatureObjectImplementation::sendToOwner(bool doClose) {
 
 	ManagedReference<GuildManager*> guildManager =
 			server->getZoneServer()->getGuildManager();
-	guildManager->sendBaselinesTo(_this.get());
+	guildManager->sendBaselinesTo(asCreatureObject());
 
 	ManagedReference<SceneObject*> grandParent = getRootParent();
 
 	if (grandParent != NULL) {
-		grandParent->sendTo(_this.get(), true);
+		grandParent->sendTo(asCreatureObject(), true);
 	} else
-		sendTo(_this.get(), doClose);
+		sendTo(asCreatureObject(), doClose);
 
-	SortedVector < ManagedReference<QuadTreeEntry*> > *closeObjects
-	= getCloseObjects();
+	CloseObjectsVector* vec = (CloseObjectsVector*) getCloseObjects();
 
-	for (int i = 0; i < closeObjects->size(); ++i) {
-		SceneObject* obj = cast<SceneObject*> (closeObjects->get(i).get());
+	assert(vec != NULL);
 
-		if (obj != _this.get()) {
+	SortedVector<ManagedReference<QuadTreeEntry* > > closeObjects;
+	vec->safeCopyTo(closeObjects);
+
+	for (int i = 0; i < closeObjects.size(); ++i) {
+		SceneObject* obj = cast<SceneObject*> (closeObjects.get(i).get());
+
+		if (obj != asCreatureObject()) {
 			if (obj != grandParent) {
 				notifyInsert(obj);
-				//obj->sendTo(_this.get(), true);
+				//obj->sendTo(asCreatureObject(), true);
 			}
 
 			if (obj->isPlayerCreature()) { //we need to destroy object to reset movement counter on near clients
-				obj->notifyDissapear(_this.get());
+				obj->notifyDissapear(asCreatureObject());
 			}
 
-			//obj->notifyInsert(_this.get());
+			//obj->notifyInsert(asCreatureObject());
 			sendTo(obj, true);
 		}
 
 	}
 
 	if (group != NULL)
-		group->sendTo(_this.get(), true);
+		group->sendTo(asCreatureObject(), true);
 
 	owner->resetPacketCheckupTime();
 }
 
 void CreatureObjectImplementation::sendBaselinesTo(SceneObject* player) {
-	Reference<CreatureObject*> thisPointer = _this.get();
+	Reference<CreatureObject*> thisPointer = asCreatureObject();
 	Zone* zone = getZone();
 
 	if (zone == NULL)
@@ -353,29 +357,26 @@ void CreatureObjectImplementation::sendSlottedObjectsTo(SceneObject* player) {
 
 	try {
 		for (int i = 0; i < getSlottedObjectsSize(); ++i) {
-			SceneObject* object = getSlottedObject(i);
+			Reference<SceneObject*> object = getSlottedObject(i);
 
 			int arrangementSize = object->getArrangementDescriptorSize();
 
 			bool sendWithoutContents = false;
 
 			if (arrangementSize > 0) {
-				Vector<String> descriptors = object->getArrangementDescriptor(0);
+				const Vector<String>* descriptors = object->getArrangementDescriptor(0);
 
-				if (descriptors.size() > 0) {
-					String childArrangement = descriptors.get(0);
+				if (descriptors->size() > 0) {
+					const String& childArrangement = descriptors->get(0);
 
-					if (player != _this.get() && ((childArrangement == "bank")
+					if (player != asCreatureObject() && ((childArrangement == "bank")
 							|| (childArrangement == "inventory") || (childArrangement
 									== "datapad") || (childArrangement == "mission_bag"))) {
 
 						sendWithoutContents = true;
-
 					}
 				}
 			}
-
-
 
 			if (objects.put(object) != -1) {
 				if (sendWithoutContents)
@@ -385,7 +386,8 @@ void CreatureObjectImplementation::sendSlottedObjectsTo(SceneObject* player) {
 			}
 		}
 	} catch (Exception& e) {
-
+		error(e.getMessage());
+		e.printStackTrace();
 	}
 }
 
@@ -421,17 +423,6 @@ void CreatureObjectImplementation::sendNewbieTutorialEnableHudElement(
 	sendMessage(message);
 }
 
-//void CreatureObjectImplementation::sendSystemMessage(const String& file,
-//		const String& stringid) {
-//	if (!isPlayerCreature())
-//		return;
-//
-//	UnicodeString message("@" + file + ":" + stringid);
-//
-//	ChatSystemMessage* msg = new ChatSystemMessage(message);
-//	sendMessage(msg);
-//}
-
 void CreatureObjectImplementation::sendSystemMessage(
 		StringIdChatParameter& message) {
 	if (!isPlayerCreature())
@@ -454,7 +445,7 @@ void CreatureObjectImplementation::clearQueueAction(uint32 actioncntr,
 	if (actioncntr == 0 || !isPlayerCreature())
 		return;
 
-	BaseMessage* queuemsg = new CommandQueueRemove(_this.get(), actioncntr, timer,
+	BaseMessage* queuemsg = new CommandQueueRemove(asCreatureObject(), actioncntr, timer,
 			tab1, tab2);
 	sendMessage(queuemsg);
 }
@@ -499,13 +490,13 @@ void CreatureObjectImplementation::setWeapon(WeaponObject* weao,
 
 	if (notifyClient) {
 		CreatureObjectDeltaMessage6* msg = new CreatureObjectDeltaMessage6(
-				_this.get());
+				asCreatureObject());
 		msg->updateWeapon();
 		msg->close();
 
 		broadcastMessage(msg, true);
 
-		WeaponRanges* ranges = new WeaponRanges(_this.get(), getWeapon());
+		WeaponRanges* ranges = new WeaponRanges(asCreatureObject(), getWeapon());
 		sendMessage(ranges);
 	}
 }
@@ -516,7 +507,7 @@ void CreatureObjectImplementation::setLevel(int level, bool randomHam) {
 
 	TangibleObjectImplementation::setLevel(level);
 
-	CreatureObjectDeltaMessage6* msg = new CreatureObjectDeltaMessage6(_this.get());
+	CreatureObjectDeltaMessage6* msg = new CreatureObjectDeltaMessage6(asCreatureObject());
 
 	msg->updateLevel(this->level);
 	msg->close();
@@ -533,7 +524,7 @@ void CreatureObjectImplementation::setInstrumentID(int instrumentid,
 
 	if (notifyClient) {
 		CreatureObjectDeltaMessage6* msg = new CreatureObjectDeltaMessage6(
-				_this.get());
+				asCreatureObject());
 		msg->updateInstrumentID(instrumentID);
 		msg->close();
 
@@ -547,7 +538,7 @@ void CreatureObjectImplementation::setTargetID(uint64 targetID,
 
 	if (notifyClient) {
 		CreatureObjectDeltaMessage6* msg = new CreatureObjectDeltaMessage6(
-				_this.get());
+				asCreatureObject());
 		msg->updateTarget();
 		msg->close();
 
@@ -564,7 +555,7 @@ void CreatureObjectImplementation::setHeight(float height, bool notifyClient) {
 	if (!notifyClient)
 		return;
 
-	CreatureObjectDeltaMessage3* msg = new CreatureObjectDeltaMessage3(_this.get());
+	CreatureObjectDeltaMessage3* msg = new CreatureObjectDeltaMessage3(asCreatureObject());
 	msg->updateHeight();
 	msg->close();
 
@@ -580,7 +571,7 @@ void CreatureObjectImplementation::setShockWounds(int newShock,
 
 	if (notifyClient) {
 		CreatureObjectDeltaMessage3* dcreo3 = new CreatureObjectDeltaMessage3(
-				_this.get());
+				asCreatureObject());
 		dcreo3->updateShockWounds();
 		dcreo3->close();
 
@@ -597,7 +588,7 @@ void CreatureObjectImplementation::addShockWounds(int shockToAdd, bool notifyCli
 		newShockWounds = 1000;
 	}
 
-	if (sendSpam && shockToAdd > 0 && _this.get()->isPlayerCreature())
+	if (sendSpam && shockToAdd > 0 && asCreatureObject()->isPlayerCreature())
 		sendStateCombatSpam("cbt_spam", "shock_wound", 1, shockToAdd, false);
 
 	setShockWounds(newShockWounds, notifyClient);
@@ -607,7 +598,7 @@ void CreatureObjectImplementation::addMountedCombatSlow() {
 	if (!isPlayerCreature() || !isRidingMount() || !isInCombat())
 		return;
 
-	uint32 crc = String("mounted_combat_slow").hashCode();
+	uint32 crc = STRING_HASHCODE("mounted_combat_slow");
 
 	if (hasBuff(crc))
 		return;
@@ -625,12 +616,12 @@ void CreatureObjectImplementation::addMountedCombatSlow() {
 	if (!parent->isMount())
 		return;
 
-	if (hasBuff(String("gallop").hashCode())) {
+	if (hasBuff(STRING_HASHCODE("gallop"))) {
 		sendSystemMessage("@combat_effects:no_combat_while_galloping"); // You cannot attack or react to an attack while galloping. Use /gallopStop to stop galloping.
 		return;
 	}
 
-	ManagedReference<CreatureObject*> creo = _this.get();
+	ManagedReference<CreatureObject*> creo = asCreatureObject();
 
 	EXECUTE_TASK_2(creo, parent, {
 			Locker locker(creo_p);
@@ -641,7 +632,7 @@ void CreatureObjectImplementation::addMountedCombatSlow() {
 			SharedCreatureObjectTemplate* playerTemplate = dynamic_cast<SharedCreatureObjectTemplate*> (templateData);
 
 			if (playerTemplate != NULL) {
-				Vector<FloatParam> speedTempl = playerTemplate->getSpeed();
+				const Vector<FloatParam>& speedTempl = playerTemplate->getSpeed();
 				newSpeed = speedTempl.get(0);
 			}
 
@@ -654,7 +645,7 @@ void CreatureObjectImplementation::addMountedCombatSlow() {
 
 			float magnitude = newSpeed / oldSpeed;
 
-			uint32 crc = String("mounted_combat_slow").hashCode();
+			uint32 crc = STRING_HASHCODE("mounted_combat_slow");
 			StringIdChatParameter startStringId("combat_effects", "mount_slow_for_combat"); // Your mount slows down to prepare for combat.
 			StringIdChatParameter endStringId("combat_effects", "mount_speed_after_combat"); // Your mount speeds up.
 
@@ -683,12 +674,12 @@ void CreatureObjectImplementation::addMountedCombatSlow() {
 }
 
 void CreatureObjectImplementation::removeMountedCombatSlow() {
-	ManagedReference<CreatureObject*> creo = _this.get();
+	ManagedReference<CreatureObject*> creo = asCreatureObject();
 
 	EXECUTE_TASK_1(creo, {
 			Locker locker(creo_p);
 
-			uint32 crc = String("mounted_combat_slow").hashCode();
+			uint32 crc = STRING_HASHCODE("mounted_combat_slow");
 			creo_p->removeBuff(crc);
 
 			ManagedReference<CreatureObject*> parent = creo_p->getParent().get().castTo<CreatureObject*>();
@@ -712,7 +703,7 @@ void CreatureObjectImplementation::setCombatState() {
 		if (stateBitmask & CreatureState::PEACE)
 			stateBitmask &= ~CreatureState::PEACE;
 
-		CreatureObjectDeltaMessage3* dcreo3 = new CreatureObjectDeltaMessage3(_this.get());
+		CreatureObjectDeltaMessage3* dcreo3 = new CreatureObjectDeltaMessage3(asCreatureObject());
 		dcreo3->updateCreatureBitmask(0x80);
 		dcreo3->updateState();
 		dcreo3->close();
@@ -745,7 +736,7 @@ void CreatureObjectImplementation::clearCombatState(bool removedefenders) {
 		stateBitmask &= ~CreatureState::COMBAT;
 
 		CreatureObjectDeltaMessage3* dcreo3 = new CreatureObjectDeltaMessage3(
-				_this.get());
+				asCreatureObject());
 		dcreo3->updateState();
 		dcreo3->close();
 
@@ -769,7 +760,7 @@ void CreatureObjectImplementation::setAlternateAppearance(const String& appearan
 		return;
 
 	CreatureObjectDeltaMessage6* dcreo6 = new CreatureObjectDeltaMessage6(
-			_this.get());
+			asCreatureObject());
 	dcreo6->updateAlternateAppearance();
 	dcreo6->close();
 
@@ -807,9 +798,9 @@ bool CreatureObjectImplementation::setState(uint64 state, bool notifyClient) {
 						SceneObject* object = cast<SceneObject*> (closeSceneObjects.get(i).get());
 
 						if (object->getParent().get() == getParent().get()) {
-							SitOnObject* soo = new SitOnObject(_this.get(), getPositionX(), getPositionZ(), getPositionY());
+							SitOnObject* soo = new SitOnObject(asCreatureObject(), getPositionX(), getPositionZ(), getPositionY());
 							object->sendMessage(soo);
-							CreatureObjectDeltaMessage3* dcreo3 = new CreatureObjectDeltaMessage3(_this.get());
+							CreatureObjectDeltaMessage3* dcreo3 = new CreatureObjectDeltaMessage3(asCreatureObject());
 							dcreo3->updatePosture();
 							dcreo3->updateState();
 							dcreo3->close();
@@ -821,7 +812,7 @@ bool CreatureObjectImplementation::setState(uint64 state, bool notifyClient) {
 					}
 				}
 			} else {
-				CreatureObjectDeltaMessage3* dcreo3 = new CreatureObjectDeltaMessage3(_this.get());
+				CreatureObjectDeltaMessage3* dcreo3 = new CreatureObjectDeltaMessage3(asCreatureObject());
 				dcreo3->updateState();
 				dcreo3->close();
 
@@ -899,7 +890,7 @@ bool CreatureObjectImplementation::clearState(uint64 state, bool notifyClient) {
 
 		if (notifyClient) {
 			CreatureObjectDeltaMessage3* dcreo3 =
-					new CreatureObjectDeltaMessage3(_this.get());
+					new CreatureObjectDeltaMessage3(asCreatureObject());
 			dcreo3->updateState();
 			dcreo3->close();
 
@@ -973,7 +964,7 @@ void CreatureObjectImplementation::setHAM(int type, int value,
 
 	if (notifyClient) {
 		CreatureObjectDeltaMessage6* msg = new CreatureObjectDeltaMessage6(
-				_this.get());
+				asCreatureObject());
 		msg->startUpdate(0x0D);
 		hamList.set(type, value, msg);
 		msg->close();
@@ -986,7 +977,7 @@ void CreatureObjectImplementation::setHAM(int type, int value,
 
 int CreatureObjectImplementation::inflictDamage(TangibleObject* attacker, int damageType, float damage, bool destroy, const String& xp, bool notifyClient) {
 	if (attacker->isCreatureObject()) {
-		CreatureObject* creature = cast<CreatureObject*>( attacker);
+		CreatureObject* creature = attacker->asCreatureObject();
 
 		if (damage > 0) {
 			getThreatMap()->addDamage(creature, damage, xp);
@@ -1022,7 +1013,7 @@ int CreatureObjectImplementation::inflictDamage(TangibleObject* attacker, int da
 	setHAM(damageType, newValue, notifyClient);
 
 	if (attacker == NULL)
-		attacker = _this.get();
+		attacker = asCreatureObject();
 
 	if (newValue <= 0)
 		notifyObjectDestructionObservers(attacker, newValue);
@@ -1061,7 +1052,7 @@ int CreatureObjectImplementation::healDamage(TangibleObject* healer,
 		if (damageType % 3 == 0) {
 			setPosture(CreaturePosture::UPRIGHT);
 			if (isPet()) {
-				ManagedReference<AiAgent*> pet = cast<AiAgent*>(_this.get().get());
+				AiAgent* pet = asAiAgent();
 				ManagedReference<CreatureObject*> player = getLinkedCreature().get();
 
 				if (pet != NULL && player != NULL) {
@@ -1078,7 +1069,7 @@ int CreatureObjectImplementation::healDamage(TangibleObject* healer,
 	setHAM(damageType, newValue, notifyClient);
 
 	if(healer != NULL && notifyObservers) {
-		_this.get()->notifyObservers(ObserverEventType::HEALINGPERFORMED, healer, returnValue);
+		asCreatureObject()->notifyObservers(ObserverEventType::HEALINGPERFORMED, healer, returnValue);
 	}
 
 	return returnValue;
@@ -1105,7 +1096,7 @@ int CreatureObjectImplementation::healWound(TangibleObject* healer,
 	setWounds(damageType, newValue, notifyClient);
 
 	if (healer != NULL && notifyObservers) {
-		_this.get()->notifyObservers(ObserverEventType::WOUNDHEALINGPERFORMED, healer, returnValue);
+		asCreatureObject()->notifyObservers(ObserverEventType::WOUNDHEALINGPERFORMED, healer, returnValue);
 	}
 
 	return returnValue;
@@ -1146,7 +1137,7 @@ void CreatureObjectImplementation::setWounds(int type, int value,
 
 	if (notifyClient) {
 		CreatureObjectDeltaMessage3* msg = new CreatureObjectDeltaMessage3(
-				_this.get());
+				asCreatureObject());
 		msg->startUpdate(0x11);
 		wounds.set(type, value, msg);
 		msg->close();
@@ -1180,7 +1171,7 @@ int CreatureObjectImplementation::addWounds(int type, int value, bool notifyClie
 	if (newValue < 0)
 		returnValue = value - newValue;
 
-	if (value > 0 && _this.get()->isPlayerCreature())
+	if (value > 0 && asCreatureObject()->isPlayerCreature())
 		sendStateCombatSpam("cbt_spam", "wounded", 1, value, false);
 
 	setWounds(type, newValue, notifyClient);
@@ -1202,7 +1193,7 @@ void CreatureObjectImplementation::setMaxHAM(int type, int value,
 
 	if (notifyClient) {
 		CreatureObjectDeltaMessage6* msg = new CreatureObjectDeltaMessage6(
-				_this.get());
+				asCreatureObject());
 		msg->startUpdate(0x0E);
 		maxHamList.set(type, value, msg);
 		msg->close();
@@ -1216,7 +1207,7 @@ void CreatureObjectImplementation::setMaxHAM(int type, int value,
 		setWounds(type, wounds.get(type), notifyClient);
 
 	if (type % 3 != 0) { //changing secondary stats, updating current value
-		healDamage(_this.get(), type, value - hamList.get(type), notifyClient);
+		healDamage(asCreatureObject(), type, value - hamList.get(type), notifyClient);
 	}
 }
 
@@ -1227,7 +1218,7 @@ void CreatureObjectImplementation::setEncumbrance(int type, int value,
 
 	if (notifyClient) {
 		CreatureObjectDeltaMessage4* msg =
-				new CreatureObjectDeltaMessage4(_this.get());
+				new CreatureObjectDeltaMessage4(asCreatureObject());
 		msg->startUpdate(0x02);
 		encumbrances.set(type, value, msg);
 		msg->close();
@@ -1365,7 +1356,7 @@ void CreatureObjectImplementation::addSkillMod(const int modType, const String& 
 	}
 
 	if (notifyClient) {
-		CreatureObjectDeltaMessage4* msg = new CreatureObjectDeltaMessage4(_this.get());
+		CreatureObjectDeltaMessage4* msg = new CreatureObjectDeltaMessage4(asCreatureObject());
 		msg->startUpdate(0x03);
 		if(newMod.getTotalSkill() != 0)
 			skillModList.set(skillMod, newMod, msg, 1);
@@ -1451,11 +1442,11 @@ void CreatureObjectImplementation::setPosture(int newPosture, bool notifyClient)
 	if (notifyClient) {
 		Vector<BasePacket*> messages;
 
-		PostureMessage* octrl = new PostureMessage(_this.get());
+		PostureMessage* octrl = new PostureMessage(asCreatureObject());
 		messages.add(octrl);
 
 		CreatureObjectDeltaMessage3* dcreo3 = new CreatureObjectDeltaMessage3(
-				_this.get());
+				asCreatureObject());
 		dcreo3->updatePosture();
 		//dcreo3->updateState();
 		dcreo3->close();
@@ -1541,7 +1532,7 @@ void CreatureObjectImplementation::updateGroupInviterID(uint64 id,
 	groupInviterID = id;
 	++groupInviteCounter;
 
-	CreatureObjectDeltaMessage6* delta = new CreatureObjectDeltaMessage6(_this.get());
+	CreatureObjectDeltaMessage6* delta = new CreatureObjectDeltaMessage6(asCreatureObject());
 	delta->updateInviterId();
 	delta->close();
 
@@ -1552,7 +1543,7 @@ void CreatureObjectImplementation::updateGroup(GroupObject* grp,
 		bool notifyClient) {
 	group = grp;
 
-	CreatureObjectDeltaMessage6* delta = new CreatureObjectDeltaMessage6(_this.get());
+	CreatureObjectDeltaMessage6* delta = new CreatureObjectDeltaMessage6(asCreatureObject());
 	delta->updateGroupID();
 	delta->close();
 
@@ -1565,7 +1556,7 @@ void CreatureObjectImplementation::setMood(byte mood, bool notifyClient) {
 
 	if (notifyClient) {
 		CreatureObjectDeltaMessage6* dcreo6 = new CreatureObjectDeltaMessage6(
-				_this.get());
+				asCreatureObject());
 		dcreo6->updateMoodID();
 		dcreo6->updateMoodStr();
 		dcreo6->close();
@@ -1583,7 +1574,7 @@ void CreatureObjectImplementation::setAccelerationMultiplierBase(
 
 	if (notifyClient) {
 		CreatureObjectDeltaMessage4* dcreo4 = new CreatureObjectDeltaMessage4(
-				_this.get());
+				asCreatureObject());
 		dcreo4->updateAccelerationMultiplierBase();
 		dcreo4->close();
 
@@ -1601,7 +1592,7 @@ void CreatureObjectImplementation::setAccelerationMultiplierMod(float newMultipl
 
 	if (notifyClient) {
 		CreatureObjectDeltaMessage4* dcreo4 = new CreatureObjectDeltaMessage4(
-				_this.get());
+				asCreatureObject());
 		dcreo4->updateAccelerationMultiplierMod();
 		dcreo4->close();
 
@@ -1618,7 +1609,7 @@ void CreatureObjectImplementation::setSpeedMultiplierBase(
 
 	if (notifyClient) {
 		CreatureObjectDeltaMessage4* dcreo4 = new CreatureObjectDeltaMessage4(
-				_this.get());
+				asCreatureObject());
 		dcreo4->updateSpeedMultiplierBase();
 		dcreo4->close();
 
@@ -1635,7 +1626,7 @@ void CreatureObjectImplementation::setTurnScale(
 
 	if (notifyClient) {
 		CreatureObjectDeltaMessage4* dcreo4 = new CreatureObjectDeltaMessage4(
-				_this.get());
+				asCreatureObject());
 		dcreo4->updateTurnScale();
 		dcreo4->close();
 
@@ -1652,7 +1643,7 @@ void CreatureObjectImplementation::setFactionRank(int rank, bool notifyClient) {
 	if (!notifyClient)
 		return;
 
-	CreatureObjectDeltaMessage3* msg = new CreatureObjectDeltaMessage3(_this.get());
+	CreatureObjectDeltaMessage3* msg = new CreatureObjectDeltaMessage3(asCreatureObject());
 	msg->updateFactionRank();
 	msg->close();
 	broadcastMessage(msg, true);
@@ -1686,7 +1677,7 @@ void CreatureObjectImplementation::setSpeedMultiplierMod(float newMultiplierMod,
 
 	if (notifyClient) {
 		CreatureObjectDeltaMessage4* dcreo4 = new CreatureObjectDeltaMessage4(
-				_this.get());
+				asCreatureObject());
 		dcreo4->updateSpeedMultiplierMod();
 		dcreo4->close();
 
@@ -1703,7 +1694,7 @@ void CreatureObjectImplementation::setRunSpeed(float newSpeed,
 
 	if (notifyClient) {
 		CreatureObjectDeltaMessage4* dcreo4 = new CreatureObjectDeltaMessage4(
-				_this.get());
+				asCreatureObject());
 		dcreo4->updateRunSpeed();
 		dcreo4->close();
 
@@ -1717,7 +1708,7 @@ void CreatureObjectImplementation::setMoodString(
 
 	if (notifyClient) {
 		CreatureObjectDeltaMessage6* dcreo6 = new CreatureObjectDeltaMessage6(
-				_this.get());
+				asCreatureObject());
 		dcreo6->updateMoodStr();
 		dcreo6->close();
 
@@ -1735,7 +1726,7 @@ void CreatureObjectImplementation::setPerformanceCounter(int counter,
 	if (!notifyClient)
 		return;
 
-	CreatureObjectDeltaMessage6* codm4 = new CreatureObjectDeltaMessage6(_this.get());
+	CreatureObjectDeltaMessage6* codm4 = new CreatureObjectDeltaMessage6(asCreatureObject());
 	codm4->updatePerformanceCounter(counter);
 	codm4->close();
 	broadcastMessage(codm4, true);
@@ -1750,7 +1741,7 @@ void CreatureObjectImplementation::setListenToID(uint64 id, bool notifyClient) {
 	if (!notifyClient)
 		return;
 
-	CreatureObjectDeltaMessage4* codm4 = new CreatureObjectDeltaMessage4(_this.get());
+	CreatureObjectDeltaMessage4* codm4 = new CreatureObjectDeltaMessage4(asCreatureObject());
 	codm4->updateListenToID(id);
 	codm4->close();
 	sendMessage(codm4);
@@ -1766,7 +1757,7 @@ void CreatureObjectImplementation::setPerformanceAnimation(
 	if (!notifyClient)
 		return;
 
-	CreatureObjectDeltaMessage6* codm4 = new CreatureObjectDeltaMessage6(_this.get());
+	CreatureObjectDeltaMessage6* codm4 = new CreatureObjectDeltaMessage6(asCreatureObject());
 	codm4->updatePerformanceAnimation(animation);
 	codm4->close();
 	broadcastMessage(codm4, true);
@@ -1782,7 +1773,7 @@ void CreatureObjectImplementation::setTerrainNegotiation(float value,
 
 void CreatureObjectImplementation::updateTerrainNegotiation()
 {
-	CreatureObjectDeltaMessage4* codm4 = new CreatureObjectDeltaMessage4(_this.get());
+	CreatureObjectDeltaMessage4* codm4 = new CreatureObjectDeltaMessage4(asCreatureObject());
 	codm4->updateTerrainNegotiation();
 	codm4->close();
 	sendMessage(codm4);
@@ -1820,15 +1811,15 @@ void CreatureObjectImplementation::enqueueCommand(unsigned int actionCRC,
 
 	if (priority == QueueCommand::IMMEDIATE) {
 #ifndef WITH_STM
-		objectController->activateCommand(_this.get(), actionCRC, actionCount,
+		objectController->activateCommand(asCreatureObject(), actionCRC, actionCount,
 				targetID, arguments);
 #else
-		action = new CommandQueueAction(_this.get(), targetID, actionCRC, actionCount, arguments);
+		action = new CommandQueueAction(asCreatureObject(), targetID, actionCRC, actionCount, arguments);
 
 		immediateQueue->put(action.get());
 
 		if (immediateQueue->size() == 1) {
-			Reference<CommandQueueActionEvent*> ev = new CommandQueueActionEvent(_this.get(), CommandQueueActionEvent::IMMEDIATE);
+			Reference<CommandQueueActionEvent*> ev = new CommandQueueActionEvent(asCreatureObject(), CommandQueueActionEvent::IMMEDIATE);
 			Core::getTaskManager()->executeTask(ev);
 		}
 #endif
@@ -1842,7 +1833,7 @@ void CreatureObjectImplementation::enqueueCommand(unsigned int actionCRC,
 		return;
 	}
 
-	action = new CommandQueueAction(_this.get(), targetID, actionCRC, actionCount,
+	action = new CommandQueueAction(asCreatureObject(), targetID, actionCRC, actionCount,
 			arguments);
 
 	if (compareCounter >= 0)
@@ -1851,7 +1842,7 @@ void CreatureObjectImplementation::enqueueCommand(unsigned int actionCRC,
 	if (commandQueue->size() != 0 || !nextAction.isPast()) {
 		if (commandQueue->size() == 0) {
 			Reference<CommandQueueActionEvent*> e =
-					new CommandQueueActionEvent(_this.get());
+					new CommandQueueActionEvent(asCreatureObject());
 			e->schedule(nextAction);
 		}
 
@@ -1878,7 +1869,7 @@ void CreatureObjectImplementation::sendCommand(const String& action, const Unico
 
 void CreatureObjectImplementation::sendCommand(uint32 crc, const UnicodeString& args, uint64 targetID, int priority) {
 	uint32 nextCounter = incrementLastActionCounter();
-	CommandQueueAdd* msg = new CommandQueueAdd(_this.get(), crc, nextCounter);
+	CommandQueueAdd* msg = new CommandQueueAdd(asCreatureObject(), crc, nextCounter);
 	sendMessage(msg);
 
 	int compareCnt = -1;
@@ -1901,20 +1892,20 @@ void CreatureObjectImplementation::activateImmediateAction() {
 	ManagedReference<ObjectController*> objectController =
 			getZoneServer()->getObjectController();
 
-	float time = objectController->activateCommand(_this.get(), action->getCommand(),
+	float time = objectController->activateCommand(asCreatureObject(), action->getCommand(),
 			action->getActionCounter(), action->getTarget(),
 			action->getArguments());
 
 	if (immediateQueue->size() > 0) {
 		Reference<CommandQueueActionEvent*> ev = new CommandQueueActionEvent(
-				_this.get(), CommandQueueActionEvent::IMMEDIATE);
+				asCreatureObject(), CommandQueueActionEvent::IMMEDIATE);
 		Core::getTaskManager()->executeTask(ev);
 	}
 }
 
 void CreatureObjectImplementation::activateQueueAction() {
 	if (nextAction.isFuture()) {
-		CommandQueueActionEvent* e = new CommandQueueActionEvent(_this.get());
+		CommandQueueActionEvent* e = new CommandQueueActionEvent(asCreatureObject());
 		e->schedule(nextAction);
 
 		return;
@@ -1929,7 +1920,7 @@ void CreatureObjectImplementation::activateQueueAction() {
 	ManagedReference<ObjectController*> objectController =
 			getZoneServer()->getObjectController();
 
-	float time = objectController->activateCommand(_this.get(), action->getCommand(),
+	float time = objectController->activateCommand(asCreatureObject(), action->getCommand(),
 			action->getActionCounter(), action->getTarget(),
 			action->getArguments());
 
@@ -1942,7 +1933,7 @@ void CreatureObjectImplementation::activateQueueAction() {
 
 	if (commandQueue->size() != 0) {
 		Reference<CommandQueueActionEvent*> e = new CommandQueueActionEvent(
-				_this.get());
+				asCreatureObject());
 
 		if (!nextAction.isFuture()) {
 			nextAction.updateToCurrentTime();
@@ -2025,13 +2016,13 @@ void CreatureObjectImplementation::notifyLoadFromDatabase() {
 	if (ghost == NULL)
 		return;
 
-	getZoneServer()->getPlayerManager()->fixHAM(_this.get());
-	getZoneServer()->getPlayerManager()->fixBuffSkillMods(_this.get());
+	getZoneServer()->getPlayerManager()->fixHAM(asCreatureObject());
+	getZoneServer()->getPlayerManager()->fixBuffSkillMods(asCreatureObject());
 
 	for (int i = 0; i < creatureBuffs.getBuffListSize(); ++i) {
 		ManagedReference<Buff*> buff = creatureBuffs.getBuffByIndex(i);
 
-		buff->loadBuffDurationEvent(_this.get());
+		buff->loadBuffDurationEvent(asCreatureObject());
 	}
 
 	ZoneServer* zoneServer = server->getZoneServer();
@@ -2089,7 +2080,7 @@ void CreatureObjectImplementation::setCreatureLink(CreatureObject* object,
 	if (!notifyClient)
 		return;
 
-	CreatureObjectDeltaMessage3* delta = new CreatureObjectDeltaMessage3(_this.get());
+	CreatureObjectDeltaMessage3* delta = new CreatureObjectDeltaMessage3(asCreatureObject());
 	delta->updateCreatureLinkID();
 	delta->close();
 
@@ -2101,7 +2092,7 @@ void CreatureObjectImplementation::executeObjectControllerAction(
 	ManagedReference<ObjectController*> objectController =
 			getZoneServer()->getObjectController();
 
-	objectController->activateCommand(_this.get(), actionCRC, 0, 0, "");
+	objectController->activateCommand(asCreatureObject(), actionCRC, 0, 0, "");
 }
 
 void CreatureObjectImplementation::executeObjectControllerAction(
@@ -2109,24 +2100,24 @@ void CreatureObjectImplementation::executeObjectControllerAction(
 	ManagedReference<ObjectController*> objectController =
 			getZoneServer()->getObjectController();
 
-	objectController->activateCommand(_this.get(), actionCRC, 0, targetID, args);
+	objectController->activateCommand(asCreatureObject(), actionCRC, 0, targetID, args);
 }
 
 void CreatureObjectImplementation::doCombatAnimation(CreatureObject* defender,
 		uint32 animcrc, byte hit, byte trails) {
-	CombatAction* action = new CombatAction(_this.get(), defender, animcrc, hit, trails);
+	CombatAction* action = new CombatAction(asCreatureObject(), defender, animcrc, hit, trails);
 
 	broadcastMessage(action, true);
 }
 
 void CreatureObjectImplementation::doAnimation(const String& anim) {
-	Animation* msg = new Animation(_this.get(), anim);
+	Animation* msg = new Animation(asCreatureObject(), anim);
 
 	broadcastMessage(msg, true);
 }
 
 void CreatureObjectImplementation::dismount() {
-	executeObjectControllerAction(String("dismount").hashCode());
+	executeObjectControllerAction(STRING_HASHCODE("dismount"));
 }
 
 float CreatureObjectImplementation::calculateBFRatio() {
@@ -2138,7 +2129,7 @@ float CreatureObjectImplementation::calculateBFRatio() {
 
 void CreatureObjectImplementation::setDizziedState(int durationSeconds) {
 	if (!hasState(CreatureState::DIZZY)) {
-		Reference<StateBuff*> state = new StateBuff(_this.get(), CreatureState::DIZZY, durationSeconds);
+		Reference<StateBuff*> state = new StateBuff(asCreatureObject(), CreatureState::DIZZY, durationSeconds);
 
 		Locker locker(state);
 
@@ -2151,7 +2142,7 @@ void CreatureObjectImplementation::setDizziedState(int durationSeconds) {
 
 void CreatureObjectImplementation::setAimingState(int durationSeconds) {
 	if (!hasState(CreatureState::AIMING)) {
-		StateBuff* aiming = new StateBuff(_this.get(), CreatureState::AIMING, durationSeconds);
+		StateBuff* aiming = new StateBuff(asCreatureObject(), CreatureState::AIMING, durationSeconds);
 
 		int aimMods = 0;
 		Vector<String>* creatureAimMods = weapon->getCreatureAimModifiers();
@@ -2170,7 +2161,7 @@ void CreatureObjectImplementation::setAimingState(int durationSeconds) {
 
 void CreatureObjectImplementation::setRalliedState(int durationSeconds) {
 	if (!hasState(CreatureState::RALLIED)) {
-		Reference<StateBuff*> state = new StateBuff(_this.get(), CreatureState::RALLIED, durationSeconds);
+		Reference<StateBuff*> state = new StateBuff(asCreatureObject(), CreatureState::RALLIED, durationSeconds);
 
 		Locker locker(state);
 
@@ -2185,7 +2176,7 @@ void CreatureObjectImplementation::setCoverState(int durationSeconds) {
 	setPosture(CreaturePosture::PRONE);
 
 	if (!hasState(CreatureState::COVER)) {
-		Reference<StateBuff*> buff = new StateBuff(_this.get(), CreatureState::COVER, durationSeconds);
+		Reference<StateBuff*> buff = new StateBuff(asCreatureObject(), CreatureState::COVER, durationSeconds);
 
 		Locker locker(buff);
 
@@ -2201,7 +2192,7 @@ void CreatureObjectImplementation::setCoverState(int durationSeconds) {
 
 void CreatureObjectImplementation::setBerserkedState(uint32 duration) {
 	if (!hasState(CreatureState::BERSERK)) {
-		Reference<StateBuff*> state = new StateBuff(_this.get(), CreatureState::BERSERK, duration);
+		Reference<StateBuff*> state = new StateBuff(asCreatureObject(), CreatureState::BERSERK, duration);
 
 		Locker locker(state);
 
@@ -2220,7 +2211,7 @@ void CreatureObjectImplementation::setBerserkedState(uint32 duration) {
 }
 void CreatureObjectImplementation::setStunnedState(int durationSeconds) {
 	if (!hasState(CreatureState::STUNNED)) {
-		Reference<StateBuff*> state = new StateBuff(_this.get(), CreatureState::STUNNED, durationSeconds, String("stunstate").hashCode());
+		Reference<StateBuff*> state = new StateBuff(asCreatureObject(), CreatureState::STUNNED, durationSeconds, STRING_HASHCODE("stunstate"));
 
 		Locker locker(state);
 
@@ -2233,7 +2224,7 @@ void CreatureObjectImplementation::setStunnedState(int durationSeconds) {
 
 		locker.release();
 
-		Reference<PrivateSkillMultiplierBuff*> multBuff = new PrivateSkillMultiplierBuff(_this.get(), String("stunstate").hashCode(), durationSeconds, BuffType::STATE);
+		Reference<PrivateSkillMultiplierBuff*> multBuff = new PrivateSkillMultiplierBuff(asCreatureObject(), STRING_HASHCODE("stunstate"), durationSeconds, BuffType::STATE);
 
 		Locker blocker(multBuff);
 
@@ -2246,7 +2237,7 @@ void CreatureObjectImplementation::setStunnedState(int durationSeconds) {
 
 void CreatureObjectImplementation::setBlindedState(int durationSeconds) {
 	if (!hasState(CreatureState::BLINDED)) {
-		Reference<StateBuff*> state = new StateBuff(_this.get(), CreatureState::BLINDED, durationSeconds);
+		Reference<StateBuff*> state = new StateBuff(asCreatureObject(), CreatureState::BLINDED, durationSeconds);
 
 		Locker locker(state);
 
@@ -2263,7 +2254,7 @@ void CreatureObjectImplementation::setBlindedState(int durationSeconds) {
 void CreatureObjectImplementation::setIntimidatedState(uint32 mod, uint32 crc, int durationSeconds) {
 	// put the skillmods into a crc buff so we can stack all forms of intim
 	if (!hasBuff(crc)) {
-		Reference<PrivateSkillMultiplierBuff*> buff = new PrivateSkillMultiplierBuff(_this.get(), crc, durationSeconds, BuffType::STATE);
+		Reference<PrivateSkillMultiplierBuff*> buff = new PrivateSkillMultiplierBuff(asCreatureObject(), crc, durationSeconds, BuffType::STATE);
 
 		Locker locker(buff);
 
@@ -2282,7 +2273,7 @@ void CreatureObjectImplementation::setIntimidatedState(uint32 mod, uint32 crc, i
 	}
 
 	if (!hasState(CreatureState::INTIMIDATED)) {
-		Reference<StateBuff*> state = new StateBuff(_this.get(), CreatureState::INTIMIDATED, durationSeconds, crc);
+		Reference<StateBuff*> state = new StateBuff(asCreatureObject(), CreatureState::INTIMIDATED, durationSeconds, crc);
 
 		Locker locker(state);
 
@@ -2319,7 +2310,7 @@ void CreatureObjectImplementation::setIntimidatedState(uint32 mod, uint32 crc, i
 
 void CreatureObjectImplementation::setSnaredState(int durationSeconds) {
 	if (!hasState(CreatureState::IMMOBILIZED)) {
-		Reference<StateBuff*> state = new StateBuff(_this.get(), CreatureState::IMMOBILIZED, durationSeconds);
+		Reference<StateBuff*> state = new StateBuff(asCreatureObject(), CreatureState::IMMOBILIZED, durationSeconds);
 
 		Locker locker(state);
 
@@ -2332,7 +2323,7 @@ void CreatureObjectImplementation::setSnaredState(int durationSeconds) {
 
 void CreatureObjectImplementation::setRootedState(int durationSeconds) {
 	if (!hasState(CreatureState::FROZEN)) {
-		Reference<StateBuff*> state = new StateBuff(_this.get(), CreatureState::FROZEN, durationSeconds);
+		Reference<StateBuff*> state = new StateBuff(asCreatureObject(), CreatureState::FROZEN, durationSeconds);
 
 		Locker locker(state);
 
@@ -2376,14 +2367,14 @@ void CreatureObjectImplementation::queueDizzyFallEvent() {
 	if (hasDizzyEvent())
 		return;
 
-	dizzyFallDownEvent = new DizzyFallDownEvent(_this.get());
+	dizzyFallDownEvent = new DizzyFallDownEvent(asCreatureObject());
 	dizzyFallDownEvent->schedule(200);
 }
 
 void CreatureObjectImplementation::activateStateRecovery() {
 	//applyDots();
 	if (damageOverTimeList.hasDot() && damageOverTimeList.isNextTickPast()) {
-		damageOverTimeList.activateDots(_this.get());
+		damageOverTimeList.activateDots(asCreatureObject());
 	}
 
 	//updateStates();
@@ -2469,7 +2460,7 @@ void CreatureObjectImplementation::notifySelfPositionUpdate() {
 			TerrainManager* terrainManager = planetManager->getTerrainManager();
 
 			if (terrainManager != NULL)
-				terrainManager->notifyPositionUpdate(_this.get());
+				terrainManager->notifyPositionUpdate(asCreatureObject());
 		}
 	}
 
@@ -2509,43 +2500,12 @@ void CreatureObjectImplementation::activateHAMRegeneration() {
 	if (mindTick < 1)
 		mindTick = 1;
 
-	healDamage(_this.get(), CreatureAttribute::HEALTH, healthTick, true, false);
-	healDamage(_this.get(), CreatureAttribute::ACTION, actionTick, true, false);
-	healDamage(_this.get(), CreatureAttribute::MIND, mindTick, true, false);
+	healDamage(asCreatureObject(), CreatureAttribute::HEALTH, healthTick, true, false);
+	healDamage(asCreatureObject(), CreatureAttribute::ACTION, actionTick, true, false);
+	healDamage(asCreatureObject(), CreatureAttribute::MIND, mindTick, true, false);
 
 
 	activatePassiveWoundRegeneration();
-
-	/*//TODO: Refactor this with event handlers
-	 if (isMeditating()) {
-	 int meditateMod = getSkillMod("meditate");
-	 float meditateBonus = 1 + ((float)meditateMod / 100);
-	 healthTick *= (int)meditateBonus;
-	 actionTick *= (int)meditateBonus;
-	 mindTick *= (int)meditateBonus;
-	 doMeditateHeals();
-	 }
-
-	 //TODO: Refactor this into an event handler
-	 if (isPlayer()) {
-	 Player* player = cast<Player*>(_this.get());
-	 if (player->getPowerboosted() && pbMind != 0) {
-	 doPowerboostTick(player);
-	 }
-	 }
-
-	 //TODO: Refactor this into an event handler
-	 if (isPlayer()) {
-	 Player* player = cast<Player*>(_this.get());
-	 if (channelForceHAM != 0) {
-	 doChannelForceTick(player);
-	 }
-	 }i
-
-	 if(!returningHome)
-	 changeHAMBars(healthTick, actionTick, mindTick, true);
-	 else if(returningHome)
-	 changeHAMBars(healthTick * 20, actionTick * 20, mindTick * 20, true);*/
 }
 
 void CreatureObjectImplementation::activatePassiveWoundRegeneration() {
@@ -2556,9 +2516,9 @@ void CreatureObjectImplementation::activatePassiveWoundRegeneration() {
 	if(healthRegen > 0) {
 		healthWoundHeal += (int)(healthRegen * 0.2);
 		if(healthWoundHeal >= 100) {
-			healWound(_this.get(), CreatureAttribute::HEALTH, 1, true, false);
-			healWound(_this.get(), CreatureAttribute::STRENGTH, 1, true, false);
-			healWound(_this.get(), CreatureAttribute::CONSTITUTION, 1, true, false);
+			healWound(asCreatureObject(), CreatureAttribute::HEALTH, 1, true, false);
+			healWound(asCreatureObject(), CreatureAttribute::STRENGTH, 1, true, false);
+			healWound(asCreatureObject(), CreatureAttribute::CONSTITUTION, 1, true, false);
 			healthWoundHeal -= 100;
 		}
 	}
@@ -2569,9 +2529,9 @@ void CreatureObjectImplementation::activatePassiveWoundRegeneration() {
 	if(actionRegen > 0) {
 		actionWoundHeal += (int)(actionRegen * 0.2);
 		if(actionWoundHeal >= 100) {
-			healWound(_this.get(), CreatureAttribute::ACTION, 1, true, false);
-			healWound(_this.get(), CreatureAttribute::QUICKNESS, 1, true, false);
-			healWound(_this.get(), CreatureAttribute::STAMINA, 1, true, false);
+			healWound(asCreatureObject(), CreatureAttribute::ACTION, 1, true, false);
+			healWound(asCreatureObject(), CreatureAttribute::QUICKNESS, 1, true, false);
+			healWound(asCreatureObject(), CreatureAttribute::STAMINA, 1, true, false);
 			actionWoundHeal -= 100;
 		}
 	}
@@ -2582,9 +2542,9 @@ void CreatureObjectImplementation::activatePassiveWoundRegeneration() {
 	if(mindRegen > 0) {
 		mindWoundHeal += (int)(mindRegen * 0.2);
 		if(mindWoundHeal >= 100) {
-			healWound(_this.get(), CreatureAttribute::MIND, 1, true, false);
-			healWound(_this.get(), CreatureAttribute::FOCUS, 1, true, false);
-			healWound(_this.get(), CreatureAttribute::WILLPOWER, 1, true, false);
+			healWound(asCreatureObject(), CreatureAttribute::MIND, 1, true, false);
+			healWound(asCreatureObject(), CreatureAttribute::FOCUS, 1, true, false);
+			healWound(asCreatureObject(), CreatureAttribute::WILLPOWER, 1, true, false);
 			mindWoundHeal -= 100;
 		}
 	}
@@ -2661,7 +2621,7 @@ void CreatureObjectImplementation::sendStateCombatSpam(const String& fileName, c
 	if (isDead()) //We don't need to know when a corpse can see clearly again!
 		return;
 
-	ManagedReference<CreatureObject*> creature = _this.get();
+	ManagedReference<CreatureObject*> creature = asCreatureObject();
 
 	if (broadcast) { //Send spam to all nearby players.
 		CombatManager::instance()->broadcastCombatSpam(creature, NULL, NULL, 0, fileName, stringName, color);
@@ -2678,7 +2638,7 @@ void CreatureObjectImplementation::sendStateCombatSpam(const String& fileName, c
 void CreatureObjectImplementation::sendCustomCombatSpam(const UnicodeString& customString, byte color) {
 	if (!this->isPlayerCreature())
 			return;
-	CombatSpam* spam = new CombatSpam(_this.get(), customString, color);
+	CombatSpam* spam = new CombatSpam(asCreatureObject(), customString, color);
 	sendMessage(spam);
 }
 
@@ -2726,16 +2686,16 @@ bool CreatureObjectImplementation::isAggressiveTo(CreatureObject* object) {
 	if (ghost == NULL || targetGhost == NULL)
 		return false;
 
-	if (ghost->isTeleporting())
+	if (ghost->isOnLoadScreen())
 		return false;
 
-	if (CombatManager::instance()->areInDuel(object, _this.get()))
+	if (CombatManager::instance()->areInDuel(object, asCreatureObject()))
 		return true;
 
 	if ((pvpStatusBitmask & CreatureFlag::OVERT) && (object->getPvpStatusBitmask() & CreatureFlag::OVERT) && object->getFaction() != getFaction())
 		return true;
 
-	if (ghost->isInBountyLockList(object->getObjectID()) || targetGhost->isInBountyLockList(_this.get()->getObjectID())) {
+	if (ghost->isInBountyLockList(object->getObjectID()) || targetGhost->isInBountyLockList(asCreatureObject()->getObjectID())) {
 		return true;
 	}
 
@@ -2747,7 +2707,7 @@ bool CreatureObjectImplementation::isAggressiveTo(CreatureObject* object) {
 
 bool CreatureObjectImplementation::isAttackableBy(TangibleObject* object) {
 	if(object->isCreatureObject())
-		return isAttackableBy(cast<CreatureObject*>(object));
+		return isAttackableBy(object->asCreatureObject());
 
 	// TODO (dannuic): this will prevent TANOs from attacking mobs (turrets, minefields, etc)
 	if(this->isAiAgent()) {
@@ -2759,7 +2719,7 @@ bool CreatureObjectImplementation::isAttackableBy(TangibleObject* object) {
 	if(ghost == NULL)
 		return false;
 
-	if (ghost->isTeleporting())
+	if (ghost->isOnLoadScreen())
 		return false;
 
 	if (isDead() || isIncapacitated() || isInvisible())
@@ -2787,7 +2747,7 @@ bool CreatureObjectImplementation::isAttackableBy(TangibleObject* object) {
 
 }
 bool CreatureObjectImplementation::isAttackableBy(CreatureObject* object) {
-	if (object == _this.get())
+	if (object == asCreatureObject())
 		return false;
 
 	if (isDead() || isInvisible())
@@ -2799,7 +2759,7 @@ bool CreatureObjectImplementation::isAttackableBy(CreatureObject* object) {
 	if (isPlayerCreature()) {
 		PlayerObject* ghost = getPlayerObject();
 
-		if (ghost != NULL && ghost->isTeleporting()) {
+		if (ghost != NULL && ghost->isOnLoadScreen()) {
 			return false;
 		}
 	}
@@ -2840,7 +2800,7 @@ bool CreatureObjectImplementation::isAttackableBy(CreatureObject* object) {
 	if (ghost == NULL || targetGhost == NULL)
 		return false;
 
-	bool areInDuel = (ghost->requestedDuelTo(object) && targetGhost->requestedDuelTo(_this.get()));
+	bool areInDuel = (ghost->requestedDuelTo(object) && targetGhost->requestedDuelTo(asCreatureObject()));
 
 	if (areInDuel)
 		return true;
@@ -2851,11 +2811,11 @@ bool CreatureObjectImplementation::isAttackableBy(CreatureObject* object) {
 	if ((pvpStatusBitmask & CreatureFlag::OVERT) && (object->getPvpStatusBitmask() & CreatureFlag::OVERT) && object->getFaction() != getFaction())
 		return true;
 
-	if (ghost->isInBountyLockList(object->getObjectID()) || targetGhost->isInBountyLockList(_this.get()->getObjectID())) {
+	if (ghost->isInBountyLockList(object->getObjectID()) || targetGhost->isInBountyLockList(asCreatureObject()->getObjectID())) {
 		return true;
 	}
 
-	if (isInBountyMission(object, _this.get())) {
+	if (isInBountyMission(object, asCreatureObject())) {
 		return true;
 	}
 
@@ -2866,7 +2826,7 @@ bool CreatureObjectImplementation::isAttackableBy(CreatureObject* object) {
 }
 
 bool CreatureObjectImplementation::isHealableBy(CreatureObject* object) {
-	if (object == _this.get())
+	if (object == asCreatureObject())
 		return true;
 
 	if (isInvisible())
@@ -2937,11 +2897,11 @@ int CreatureObjectImplementation::notifyObjectDestructionObservers(TangibleObjec
 	if (ghost != NULL) {
 		PlayerManager* playerManager = getZoneServer()->getPlayerManager();
 
-		playerManager->notifyDestruction(attacker, _this.get(), condition);
+		playerManager->notifyDestruction(attacker, asCreatureObject(), condition);
 	}
 
 	if (attacker->isAiAgent()) {
-		AiAgent* aiAgent = cast<AiAgent*>(attacker);
+		AiAgent* aiAgent = attacker->asAiAgent();
 		aiAgent->sendReactionChat(ReactionManager::GLOAT);
 	}
 
@@ -2982,7 +2942,7 @@ void CreatureObjectImplementation::createChildObjects() {
 
 		childObjects.put(obj);
 
-		obj->initializeChildObject(_this.get());
+		obj->initializeChildObject(asCreatureObject());
 	}
 }
 
@@ -2992,7 +2952,7 @@ void CreatureObjectImplementation::addWearableObject(TangibleObject* object, boo
 
 	if (notifyClient) {
 		CreatureObjectDeltaMessage6* msg = new CreatureObjectDeltaMessage6(
-				_this.get());
+				asCreatureObject());
 		msg->startUpdate(0x0F);
 		wearablesVector.add(object, msg);
 		msg->close();
@@ -3011,7 +2971,7 @@ void CreatureObjectImplementation::removeWearableObject(TangibleObject* object, 
 
 	if (notifyClient) {
 		CreatureObjectDeltaMessage6* msg = new CreatureObjectDeltaMessage6(
-				_this.get());
+				asCreatureObject());
 		msg->startUpdate(0x0F);
 		wearablesVector.remove(index, msg);
 		msg->close();
@@ -3035,11 +2995,11 @@ int CreatureObjectImplementation::handleObjectMenuSelect(CreatureObject* player,
 	if (isDead() && !isPet()) {
 		switch (selectedID) {
 		case 35:
-			player->executeObjectControllerAction(String("loot").hashCode(), getObjectID(), "");
+			player->executeObjectControllerAction(STRING_HASHCODE("loot"), getObjectID(), "");
 
 			return 0;
 		case 36:
-			player->executeObjectControllerAction(String("loot").hashCode(), getObjectID(), "all");
+			player->executeObjectControllerAction(STRING_HASHCODE("loot"), getObjectID(), "all");
 
 			return 0;
 		}
@@ -3068,7 +3028,7 @@ void CreatureObjectImplementation::setFaction(unsigned int crc) {
 	faction = crc;
 
 	if (isPlayerCreature()) {
-		Reference<CreatureObject*> player = _this.get();
+		Reference<CreatureObject*> player = asCreatureObject();
 
 		if (player == NULL)
 			return;
@@ -3084,7 +3044,7 @@ void CreatureObjectImplementation::setFaction(unsigned int crc) {
 				ActiveArea* area = activeAreas.get(i);
 
 				if (area != NULL)
-					area->notifyEnter(_this.get());
+					area->notifyEnter(asCreatureObject());
 			}
 		}
 
@@ -3137,7 +3097,7 @@ void CreatureObjectImplementation::destroyPlayerCreatureFromDatabase(bool destro
 
 	server->destroyObjectFromDatabase(getObjectID());
 
-	_this.get()->setPersistent(0);
+	asCreatureObject()->setPersistent(0);
 
 	if (!destroyContainedObjects)
 		return;
@@ -3269,9 +3229,17 @@ void CreatureObjectImplementation::updateVehiclePosition(bool sendPackets) {
 	CreatureObject* creo = cast<CreatureObject*>(parent.get());
 
 	if (creo != NULL) {
-		Locker clocker(creo, _this.get());
+		Locker clocker(creo, asCreatureObject());
 		creo->setCurrentSpeed(getCurrentSpeed());
 	}
 
 	TangibleObjectImplementation::updateVehiclePosition(sendPackets);
+}
+
+CreatureObject* CreatureObjectImplementation::asCreatureObject() {
+	return _this.getReferenceUnsafeStaticCast();
+}
+
+CreatureObject* CreatureObject::asCreatureObject() {
+	return this;
 }

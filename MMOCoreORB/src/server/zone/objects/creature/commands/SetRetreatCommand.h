@@ -22,9 +22,6 @@ public:
 
 		if (!checkInvalidLocomotions(creature))
 			return INVALIDLOCOMOTION;
-
-		if (creature == NULL)
-			return GENERALERROR;
 		
 		if (!creature->hasSkill("outdoors_squadleader_support_03")) {
 //			StringIdChatParameter params("@error_message:prose_nsf_skill_cmd"); //You lack sufficient skill to use the %TO command.	
@@ -49,10 +46,10 @@ public:
 		}
 		
         if(message.isEmpty()) {
-            playerObject->removeCommandMessageString(String("retreat").hashCode());
+            playerObject->removeCommandMessageString(STRING_HASHCODE("retreat"));
 			player->sendSystemMessage("Your Retreat message has been removed.");
 		} else {
-            playerObject->setCommandMessageString(String("retreat").hashCode(), message);
+            playerObject->setCommandMessageString(STRING_HASHCODE("retreat"), message);
 			player->sendSystemMessage("Your Retreat message was set to :-\n" + message);
 		}	
 

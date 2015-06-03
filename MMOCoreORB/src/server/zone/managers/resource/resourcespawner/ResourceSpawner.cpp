@@ -27,6 +27,14 @@ ResourceSpawner::ResourceSpawner(ManagedReference<ZoneServer*> serv,
 	processor = impl;
 	databaseManager = ObjectDatabaseManager::instance();
 
+	resourceTree = NULL;
+	lowerGateOverride = 0;
+	resourceMap = NULL;
+	maxSpawnAmount = 0;
+	scriptLoading = false;
+	shiftDuration = 0;
+	spawnThrottling = 0;
+
 	Logger::setLoggingName("ResourceSpawner");
 
 	nameManager = processor->getNameManager();
@@ -727,8 +735,7 @@ void ResourceSpawner::sendSurvey(CreatureObject* player, const String& resname) 
 
 	ManagedReference<SurveyTool*> surveyTool = session->getActiveSurveyTool();
 
-	if (surveyTool == NULL || !resourceMap->contains(resname.toLowerCase()) || player == NULL
-			|| player->getZone() == NULL)
+	if (surveyTool == NULL || !resourceMap->contains(resname.toLowerCase()) || player->getZone() == NULL)
 		return;
 
 	String zoneName = player->getZone()->getZoneName();
@@ -818,8 +825,7 @@ void ResourceSpawner::sendSample(CreatureObject* player, const String& resname,
 
 	ManagedReference<SurveyTool*> surveyTool = session->getActiveSurveyTool();
 
-	if (surveyTool == NULL || !resourceMap->contains(resname.toLowerCase()) || player == NULL
-			|| player->getZone() == NULL)
+	if (surveyTool == NULL || !resourceMap->contains(resname.toLowerCase()) || player->getZone() == NULL)
 		return;
 
 	ManagedReference<PlayerObject*> ghost = player->getPlayerObject();
@@ -864,7 +870,7 @@ void ResourceSpawner::sendSampleResults(CreatureObject* player, const float dens
 	ManagedReference<SurveyTool*> surveyTool = session->getActiveSurveyTool();
 	PlayerObject* ghost = player->getPlayerObject();
 
-	if (surveyTool == NULL || player == NULL || player->getZone() == NULL)
+	if (surveyTool == NULL || player->getZone() == NULL)
 		return;
 
 	Zone* zne = player->getZone();
@@ -1020,7 +1026,7 @@ bool ResourceSpawner::addResourceToPlayerInventory(CreatureObject* player, Resou
 		return false;
 	}
 	// Create New resource container if one isn't found in inventory
-	ResourceContainer* harvestedResource = resourceSpawn->createResource(unitsExtracted);
+	Reference<ResourceContainer*> harvestedResource = resourceSpawn->createResource(unitsExtracted);
 
 	if (inventory->transferObject(harvestedResource, -1, false)) {
 		inventory->broadcastObject(harvestedResource, true);
@@ -1033,7 +1039,7 @@ bool ResourceSpawner::addResourceToPlayerInventory(CreatureObject* player, Resou
 	}
 }
 
-ResourceContainer* ResourceSpawner::harvestResource(CreatureObject* player,
+Reference<ResourceContainer*> ResourceSpawner::harvestResource(CreatureObject* player,
 		const String& type, const int quantity) {
 
 	String zoneName = player->getZone()->getZoneName();

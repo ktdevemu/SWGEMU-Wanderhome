@@ -59,6 +59,8 @@ import engine.util.u3d.Matrix4;
 import system.thread.ReadWriteLock;
 import system.thread.Mutex;
 include server.zone.objects.scene.variables.ContainerObjectsMap;
+import server.zone.objects.tangible.TangibleObject;
+import server.zone.objects.creature.AiAgent;
 
 @mock
 class SceneObject extends QuadTreeEntry implements Logger {
@@ -726,8 +728,6 @@ class SceneObject extends QuadTreeEntry implements Logger {
 
 			return pendingTasks;
 		}
-		
-		return pendingTasks;
 	}
 	
 	/**
@@ -879,7 +879,7 @@ class SceneObject extends QuadTreeEntry implements Logger {
 		return zone.get();
 	}
 
-	@read
+	@dirty
 	public native unsigned long getObjectID();
 	
 	@local
@@ -977,10 +977,8 @@ class SceneObject extends QuadTreeEntry implements Logger {
 
 	public native int getArrangementDescriptorSize();
  	
-	@dereferenced
 	@local
-	public native Vector<string> getArrangementDescriptor(int idx);
-
+	public native final Vector<string> getArrangementDescriptor(int idx);
 
 	@dirty
 	public string getSlotDescriptor(int idx) {
@@ -1361,8 +1359,20 @@ class SceneObject extends QuadTreeEntry implements Logger {
 	}
 	
 	@dirty
+	@local
+	public abstract CreatureObject asCreatureObject() {
+		return null;
+	}
+	
+	@dirty
 	public abstract boolean isAiAgent() {
 		return false;
+	}
+	
+	@dirty
+	@local
+	public abstract AiAgent asAiAgent() {
+		return null;
 	}
 
 	@dirty
@@ -1393,6 +1403,12 @@ class SceneObject extends QuadTreeEntry implements Logger {
 	@dirty
 	public abstract boolean isBuildingObject() {
 		return false;
+	}
+	
+	@dirty
+	@local
+	public abstract BuildingObject asBuildingObject() {
+		return null;
 	}
 	
 	@dirty
@@ -1454,6 +1470,17 @@ class SceneObject extends QuadTreeEntry implements Logger {
 	public abstract boolean isTangibleObject() {
 		return false;
 	}
+	
+	@dirty
+	@local
+	public abstract TangibleObject asTangibleObject() {
+		return null;
+	}
+	
+	@dirty
+	@local
+	@nativeStub
+	public native SceneObject asSceneObject();
 	
 	@dirty
 	public abstract boolean isResourceContainer() {

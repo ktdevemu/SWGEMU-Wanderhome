@@ -30,9 +30,9 @@ void ReconMissionObjectiveImplementation::activate() {
 	ManagedReference<ZoneServer*> zoneServer = Core::lookupObject<ZoneServer>("ZoneServer");
 
 	if (locationActiveArea == NULL) {
-		locationActiveArea = ( zoneServer->createObject(String("object/mission_recon_area.iff").hashCode(), 1)).castTo<MissionReconActiveArea*>();
+		locationActiveArea = ( zoneServer->createObject(STRING_HASHCODE("object/mission_recon_area.iff"), 1)).castTo<MissionReconActiveArea*>();
 		Locker locker(locationActiveArea);
-		locationActiveArea->setMissionObjective(_this.get());
+		locationActiveArea->setMissionObjective(_this.getReferenceUnsafeStaticCast());
 	}
 
 	if (!locationActiveArea->isInQuadTree()) {
