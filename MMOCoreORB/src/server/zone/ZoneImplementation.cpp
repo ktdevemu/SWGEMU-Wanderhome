@@ -373,7 +373,7 @@ void ZoneImplementation::updateActiveAreas(TangibleObject* tano) {
 }
 
 void ZoneImplementation::addSceneObject(SceneObject* object) {
-	objectMap->put(object->getObjectID(), object);
+	SceneObject* old = objectMap->put(object->getObjectID(), object);
 	
 	//Civic and commercial structures map registration will be handled by their city
 	if (object->isStructureObject()) {
@@ -390,6 +390,8 @@ void ZoneImplementation::addSceneObject(SceneObject* object) {
 			if (structure->isCivicStructure())
 				return;
 		}
+	} else if (old == NULL && object->isAiAgent()) {
+		spawnedAiAgents.increment();
 	}
 	
 	registerObjectWithPlanetaryMap(object);
@@ -425,8 +427,13 @@ void ZoneImplementation::updatePlanetaryMapIcon(SceneObject* object, byte icon) 
 }
 
 void ZoneImplementation::dropSceneObject(SceneObject* object)  {
-	objectMap->remove(object->getObjectID());
+	SceneObject* oldObject = objectMap->remove(object->getObjectID());
+
 	unregisterObjectWithPlanetaryMap(object);
+
+	if (oldObject != NULL && oldObject->isAiAgent()) {
+		spawnedAiAgents.decrement();
+	}
 }
 
 void ZoneImplementation::sendMapLocationsTo(SceneObject* player) {
