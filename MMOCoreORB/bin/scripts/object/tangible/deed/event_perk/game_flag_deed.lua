@@ -45,6 +45,8 @@ object_tangible_deed_event_perk_game_flag_deed = object_tangible_deed_event_perk
 	templateType = EVENTPERKDEED,
 	gameObjectType = 8388615,
 	noTrade = 1,
+	generatedObjectTemplate = "object/tangible/event_perk/flag_game.iff",
+	perkType = GAME,
 
 }
 

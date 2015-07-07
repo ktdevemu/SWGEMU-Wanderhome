@@ -13,7 +13,7 @@ welcome = ConvoScreen:new {
 		{"@conversation/event_promoter:s_9", "explain_more"}, -- Tell me more about all of this
 		{"@conversation/event_promoter:s_11", "interested_decorations"}, -- I'm interested in decorations
 --		{"@conversation/event_promoter:s_26", "interested_venues"}, -- I'm interested in venues
---		{"@conversation/event_promoter:s_42", "interested_games_supplies"}, -- I'm interested in games and supplies
+		{"@conversation/event_promoter:s_42", "interested_games_supplies"}, -- I'm interested in games and supplies
 --		{"@conversation/event_promoter:s_80", "interested_personnel"}, -- I'm interested in hiring personnel
 	}
 }
@@ -26,7 +26,7 @@ explain_more = ConvoScreen:new {
 	options = {
 		{"@conversation/event_promoter:s_11", "interested_decorations"}, -- I'm interested in decorations
 --		{"@conversation/event_promoter:s_26", "interested_venues"}, -- I'm interested in venues
---		{"@conversation/event_promoter:s_42", "interested_games_supplies"}, -- I'm interested in games and supplies
+		{"@conversation/event_promoter:s_42", "interested_games_supplies"}, -- I'm interested in games and supplies
 --		{"@conversation/event_promoter:s_80", "interested_personnel"}, -- I'm interested in hiring personnel
 	}
 }
@@ -157,7 +157,7 @@ explain_jukebox = ConvoScreen:new {
 		{"@conversation/event_promoter:s_30", "sale_games_supplies"}, -- Rent Games and Supplies
 		{"@conversation/event_promoter:s_50", "explain_capture_the_flag_game"}, -- What is the Capture the Flag Game?
 		{"@conversation/event_promoter:s_58", "explain_lottery_droid"}, -- What is the Lottery Droid?
-		{"@conversation/event_promoter:s_64", "explain_scavenger_hunt_droid"}, -- What is the Scavenger Hunt Droid?
+		{"@conversation/event_promoter:s_62", "explain_scavenger_hunt_droid"}, -- What is the Scavenger Hunt Droid?
 		{"@conversation/event_promoter:s_66", "explain_treasure_chest"}, -- What is the Treasure Chest?
 		{"@conversation/event_promoter:s_70", "explain_shuttle_beacon"}, -- What is the Shuttle Beacon?
 	}

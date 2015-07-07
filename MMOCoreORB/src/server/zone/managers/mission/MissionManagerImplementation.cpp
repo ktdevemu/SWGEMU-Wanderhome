@@ -564,7 +564,6 @@ void MissionManagerImplementation::populateMissionList(MissionTerminal* missionT
 		float cityBonus = 1.f + player->getSkillMod("private_spec_missions") / 100.f;
 		mission->setRewardCredits(mission->getRewardCredits() * cityBonus);
 
-	//	randomizeHuntingMission(player, mission);
 		mission->setRefreshCounter(counter, true);
 	}
 
@@ -1051,7 +1050,7 @@ bool MissionManagerImplementation::randomGenericDeliverMission(CreatureObject* p
 	Locker missionSpawnLocker(&missionNpcSpawnMap);
 
 	//Find a spawn point in current city.
-	float minDistance = 0.0f;
+	float minDistance = 10.0f;
 	float maxDistance = 300.0f;
 	Reference<NpcSpawnPoint*> startNpc = missionNpcSpawnMap.getRandomNpcSpawnPoint(planetName.hashCode(), startPosition, getDeliverMissionSpawnType(faction), minDistance, maxDistance);
 
@@ -1068,7 +1067,7 @@ bool MissionManagerImplementation::randomGenericDeliverMission(CreatureObject* p
 
 	}
 	//Search in all parts of the city for the end spawn.
-	minDistance = 5.0f;
+	minDistance = 15.0f;
 	maxDistance = 1500.0f;
 
 	Reference<NpcSpawnPoint*> endNpc;
@@ -1102,8 +1101,8 @@ bool MissionManagerImplementation::randomGenericDeliverMission(CreatureObject* p
 
 	mission->setTargetTemplate(TemplateManager::instance()->getTemplate(STRING_HASHCODE("object/tangible/mission/mission_datadisk.iff")));
 
-	int baseCredits = 50;
-	int deliverDistanceCredits = startNpc->getPosition()->distanceTo(*(endNpc->getPosition())) / 10;
+	int baseCredits = 40;
+	int deliverDistanceCredits = (playerPosition.distanceTo(*(startNpc->getPosition())) + startNpc->getPosition()->distanceTo(*(endNpc->getPosition()))) / 10;
 
 	mission->setRewardCredits(baseCredits + deliverDistanceCredits);
 
@@ -1370,7 +1369,7 @@ void MissionManagerImplementation::randomizeGenericHuntingMission(CreatureObject
 		diffString = "hard";
 	}
 
-	int baseReward = 100 + difficulty * (200 + randomLairSpawn->getMinDifficulty());
+	int baseReward = 500 + (difficulty * 100 * randomLairSpawn->getMinDifficulty());
 	mission->setRewardCredits(baseReward + System::random(100));
 	mission->setMissionDifficulty(difficulty);
 	mission->setMissionTitle("mission/mission_npc_hunting_neutral_" + diffString, "m" + String::valueOf(randTexts) + "t");
@@ -1571,6 +1570,7 @@ LairSpawn* MissionManagerImplementation::getRandomLairSpawn(CreatureObject* play
 		return NULL;
 
 	Vector<Reference<LairSpawn*> >* availableLairList = NULL;
+	int minLevelCeiling = 20;
 
 	if (type == MissionObject::DESTROY) {
 		String missionGroup;
@@ -1604,12 +1604,13 @@ LairSpawn* MissionManagerImplementation::getRandomLairSpawn(CreatureObject* play
 		}
 
 		availableLairList = destroyMissionGroup->getSpawnList();
+		minLevelCeiling = destroyMissionGroup->getMinLevelCeiling();
 
 	} else if (type == MissionObject::HUNTING) {
 		CreatureManager* creatureManager = zone->getCreatureManager();
 		Vector<ManagedReference<SpawnArea* > >* worldAreas = creatureManager->getWorldSpawnAreas();
 
-		ManagedReference<SpawnArea*> spawnArea;
+		ManagedReference<SpawnArea*> spawnArea = NULL;
 
 		if (worldAreas == NULL || worldAreas->size() == 0) {
 			return NULL;
@@ -1623,13 +1624,7 @@ LairSpawn* MissionManagerImplementation::getRandomLairSpawn(CreatureObject* play
 			return NULL;
 		}
 
-		SpawnGroup* spawnGroup = spawnArea->getSpawnGroup();
-
-		if (spawnGroup == NULL) {
-			return NULL;
-		}
-
-		availableLairList = spawnGroup->getSpawnList();
+		availableLairList = spawnArea->getSpawnList();
 	}
 
 	if (availableLairList == NULL || availableLairList->size() == 0) {
@@ -1644,16 +1639,25 @@ LairSpawn* MissionManagerImplementation::getRandomLairSpawn(CreatureObject* play
 
 	LairSpawn* lairSpawn = NULL;
 
-	//Ensure that the minimum is low enough to get missions on any planet
-	int minLevel = MIN(playerLevel - 5, 20);
+	//Cap the minLevel to prevent a group from being too high to get missions on a planet
+	int minLevel = MIN(playerLevel - 5, minLevelCeiling);
 
 	//Try to pick random lair within playerLevel +-5;
 	while (counter > 0 && !foundLair) {
 		LairSpawn* randomLairSpawn = availableLairList->get(System::random(availableLairList->size() - 1));
 		if (randomLairSpawn != NULL) {
 			if (randomLairSpawn->getMinDifficulty() <= (playerLevel + 5) && randomLairSpawn->getMaxDifficulty() >= minLevel) {
-				lairSpawn = randomLairSpawn;
-				foundLair = true;
+				if (type == MissionObject::DESTROY) {
+					lairSpawn = randomLairSpawn;
+					foundLair = true;
+				} else {
+					LairTemplate* lairTemp = CreatureTemplateManager::instance()->getLairTemplate(randomLairSpawn->getLairTemplateName().hashCode());
+
+					if (lairTemp->getMobType() == LairTemplate::CREATURE) {
+						lairSpawn = randomLairSpawn;
+						foundLair = true;
+					}
+				}
 			}
 		}
 
@@ -1665,9 +1669,19 @@ LairSpawn* MissionManagerImplementation::getRandomLairSpawn(CreatureObject* play
 		for (int i = 0; i < availableLairList->size(); i++) {
 			LairSpawn* randomLairSpawn = availableLairList->get(i);
 			if (randomLairSpawn->getMinDifficulty() <= (playerLevel + 5) && randomLairSpawn->getMaxDifficulty() >= minLevel) {
-				lairSpawn = randomLairSpawn;
-				foundLair = true;
-				break;
+				if (type == MissionObject::DESTROY) {
+					lairSpawn = randomLairSpawn;
+					foundLair = true;
+					break;
+				} else {
+					LairTemplate* lairTemp = CreatureTemplateManager::instance()->getLairTemplate(randomLairSpawn->getLairTemplateName().hashCode());
+
+					if (lairTemp->getMobType() == LairTemplate::CREATURE) {
+						lairSpawn = randomLairSpawn;
+						foundLair = true;
+						break;
+					}
+				}
 			}
 		}
 	}
@@ -1677,8 +1691,17 @@ LairSpawn* MissionManagerImplementation::getRandomLairSpawn(CreatureObject* play
 		for (int i = 0; i < availableLairList->size(); i++) {
 			LairSpawn* randomLairSpawn = availableLairList->get(i);
 			if (randomLairSpawn->getMinDifficulty() <= (playerLevel + 5)) {
-				lairSpawn = randomLairSpawn;
-				break;
+				if (type == MissionObject::DESTROY) {
+					lairSpawn = randomLairSpawn;
+					break;
+				} else {
+					LairTemplate* lairTemp = CreatureTemplateManager::instance()->getLairTemplate(randomLairSpawn->getLairTemplateName().hashCode());
+
+					if (lairTemp->getMobType() == LairTemplate::CREATURE) {
+						lairSpawn = randomLairSpawn;
+						break;
+					}
+				}
 			}
 		}
 	}
