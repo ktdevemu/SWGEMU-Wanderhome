@@ -38,7 +38,7 @@ void DroidMerchantModuleDataComponent::fillObjectMenuResponse(SceneObject* droid
 	//if(player != getDroidObject()->getLinkedCreature()) was this shown to the owner?
 	menuResponse->addRadialMenuItem(70,3,"@pet/droid_modules:merchant_barker"); // Get Waypoint
 	// Novice Musician or Novice Dancer required to utilize this module
-	if (player->hasSkill("crafting_merchant_advertising_04")){
+	if (player->hasSkill("crafting_merchant_advertising_04") && getDroidObject()->getLinkedCreature().get() == player){
 		menuResponse->addRadialMenuItemToRadialID(132,BARKER_RECORD_MESSAGE,3, "@pet/droid_modules:record_message"); // Record
 		menuResponse->addRadialMenuItemToRadialID(132,BARKER_STORE_WAYPOINT,3, "@pet/droid_modules:store_waypoint"); // Store a Way point
 		menuResponse->addRadialMenuItemToRadialID(132,BARKER_TOGGLE,3, "@pet/droid_modules:barker_on_off"); // Toggle
@@ -75,7 +75,7 @@ int DroidMerchantModuleDataComponent::handleObjectMenuSelect(CreatureObject* pla
 		ghost->addWaypoint(tway,true,true);
 		player->sendSystemMessage("@pet/droid_modules:waypoint_sent");
 	}
-	else if (selectedID == BARKER_RECORD_MESSAGE) {
+	else if (selectedID == BARKER_RECORD_MESSAGE && getDroidObject()->getLinkedCreature().get() == player) {
 		// record the emssage
 		if(waitingOnMessage == false) {
 			player->sendSystemMessage("@pet/droid_modules:recording_message_on");
@@ -85,7 +85,7 @@ int DroidMerchantModuleDataComponent::handleObjectMenuSelect(CreatureObject* pla
 			waitingOnMessage = false;
 		}
 	}
-	else if( selectedID == BARKER_TOGGLE ){
+	else if( selectedID == BARKER_TOGGLE && getDroidObject()->getLinkedCreature().get() == player){
 		// handle toggle
 		if(active) {
 			player->sendSystemMessage("@pet/droid_modules:barking_off");
@@ -121,7 +121,7 @@ int DroidMerchantModuleDataComponent::handleObjectMenuSelect(CreatureObject* pla
 			active = true;
 		}
 	}
-	else if (selectedID == BARKER_STORE_WAYPOINT) {
+	else if (selectedID == BARKER_STORE_WAYPOINT && getDroidObject()->getLinkedCreature().get() == player) {
 		// Handle the waypoint input
 		ManagedReference<PlayerObject*> ghost = player->getPlayerObject();
 		int waypointsSize = ghost->getWaypointListSize();
