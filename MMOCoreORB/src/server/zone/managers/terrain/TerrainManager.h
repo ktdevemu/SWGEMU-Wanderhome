@@ -14,6 +14,8 @@
 #include "server/zone/objects/scene/SceneObject.h"
 #include "server/zone/objects/creature/CreatureObject.h"
 
+#include "engine/util/lru/SynchronizedLRUCache.h"
+
 namespace server {
  namespace zone {
   class Zone;
@@ -29,9 +31,14 @@ class TerrainManager : public Logger, public Object {
 
 	Zone* zone;
 
+	SynchronizedLRUCache2<uint64, float, float, float>* heightCache;
+	AtomicInteger cacheClearCount;
+
 public:
 	TerrainManager(Zone* planet);
 	TerrainManager(ManagedWeakReference<Zone*> planet);
+
+	~TerrainManager();
 
 	bool initialize(const String& terrainFile);
 
@@ -57,9 +64,10 @@ public:
 
 	ProceduralTerrainAppearance* getProceduralTerrainAppearance();
 
-	float getHeight(float x, float y) {
-		return terrainData->getHeight(x, y);
-	}
+	float getCachedHeight(float x, float y);
+	float getUnCachedHeight(float x, float y);
+
+	float getHeight(float x, float y);
 
 	float getMin() {
 		return terrainData->getSize() / 2 * -1;
@@ -71,6 +79,18 @@ public:
 
 	float getSize() {
 		return terrainData->getSize();
+	}
+
+	int getCacheHitCount() {
+		return heightCache->getHitCount();
+	}
+
+	int getCacheMissCount() {
+		return heightCache->getMissCount();
+	}
+
+	int getCacheClearCount() {
+		return cacheClearCount.get();
 	}
 };
 
