@@ -1613,6 +1613,9 @@ void PlayerObjectImplementation::activateRecovery() {
 
 		recoveryEvent->schedule(3000);
 	}
+
+	if (!recoveryEvent->isScheduled())
+		recoveryEvent->schedule(3000);
 }
 
 void PlayerObjectImplementation::activateForcePowerRegen() {
