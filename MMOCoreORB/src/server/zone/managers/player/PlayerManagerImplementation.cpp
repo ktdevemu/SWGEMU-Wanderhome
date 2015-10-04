@@ -1397,6 +1397,10 @@ void PlayerManagerImplementation::awardExperience(CreatureObject* player, const 
 		int amount, bool sendSystemMessage, float localMultiplier) {
 
 	PlayerObject* playerObject = player->getPlayerObject();
+
+	if (playerObject == NULL)
+		return;
+
 	int xp = playerObject->addExperience(xpType, (int) (amount * localMultiplier * globalExpMultiplier));
 
 	player->notifyObservers(ObserverEventType::XPAWARDED, player, xp);
@@ -2863,12 +2867,6 @@ void PlayerManagerImplementation::lootAll(CreatureObject* player, CreatureObject
 
 	if (creatureInventory == NULL)
 		return;
-
-	if (creatureInventory->getContainerPermissions()->getOwnerID() != player->getObjectID() && creatureInventory->getContainerPermissions()->getOwnerID() != player->getGroupID()) {
-		player->sendSystemMessage("@error_message:no_corpse_permission"); //You do not have permission to access this corpse.
-
-		return;
-	}
 
 	int cashCredits = ai->getCashCredits();
 
