@@ -43,7 +43,7 @@
 #include "server/zone/objects/creature/CreatureAttribute.h"
 #include "server/zone/objects/creature/CreatureState.h"
 #include "server/zone/objects/creature/CreaturePosture.h"
-#include "server/zone/objects/creature/LuaAiAgent.h"
+#include "server/zone/objects/creature/ai/LuaAiAgent.h"
 #include "server/zone/objects/creature/ai/bt/Behavior.h"
 #include "server/zone/objects/area/LuaActiveArea.h"
 #include "server/zone/templates/mobile/ConversationScreen.h"
@@ -72,6 +72,7 @@
 #include "server/zone/packets/scene/PlayClientEffectLocMessage.h"
 #include "server/zone/managers/player/BadgeList.h"
 #include "server/zone/managers/player/LuaQuestInfo.h"
+#include "server/zone/objects/tangible/misc/FsPuzzlePack.h"
 
 int DirectorManager::DEBUG_MODE = 0;
 int DirectorManager::ERROR_CODE = NO_ERROR;
@@ -411,6 +412,7 @@ void DirectorManager::initializeLuaEngine(Lua* luaEngine) {
 	luaEngine->setGlobalInt("MOVEIN", ContainerPermissions::MOVEIN);
 	luaEngine->setGlobalInt("MOVEOUT", ContainerPermissions::MOVEOUT);
 	luaEngine->setGlobalInt("WALKIN", ContainerPermissions::WALKIN);
+	luaEngine->setGlobalInt("MOVECONTAINER", ContainerPermissions::MOVECONTAINER);
 
 	// Transfer Error Codes
 	luaEngine->setGlobalInt("TRANSFERCANADD", TransferErrorCode::SUCCESS);
@@ -459,6 +461,7 @@ void DirectorManager::initializeLuaEngine(Lua* luaEngine) {
 	Luna<LuaStringIdChatParameter>::Register(luaEngine->getLuaState());
 	Luna<LuaTicketObject>::Register(luaEngine->getLuaState());
 	Luna<LuaQuestInfo>::Register(luaEngine->getLuaState());
+	Luna<LuaFsPuzzlePack>::Register(luaEngine->getLuaState());
 }
 
 int DirectorManager::loadScreenPlays(Lua* luaEngine) {
@@ -1920,6 +1923,7 @@ int DirectorManager::spawnSceneObject(lua_State* L) {
 
 		lua_pushlightuserdata(L, object.get());
 	} else {
+		instance()->error("could not spawn template " + script);
 		lua_pushnil(L);
 	}
 

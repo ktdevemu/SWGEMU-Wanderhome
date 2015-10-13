@@ -12,12 +12,13 @@
 #include "engine/engine.h"
 
 #include "server/zone/objects/creature/LuaCreatureObject.h"
-#include "server/zone/objects/creature/AiAgent.h"
+#include "server/zone/objects/creature/ai/AiAgent.h"
 
 namespace server {
 namespace zone {
 namespace objects {
 namespace creature {
+namespace ai {
 	class AiAgent;
 
 	class LuaAiAgent : public LuaCreatureObject {
@@ -103,7 +104,6 @@ namespace creature {
 		int shouldRetreat(lua_State* L);
 		int leash(lua_State* L);
 		int clearCombatState(lua_State* L);
-		int isInCombat(lua_State* L);
 		int checkLineOfSight(lua_State* L);
 		int activateRecovery(lua_State* L);
 		int activateAwareness(lua_State* L);
@@ -134,6 +134,7 @@ namespace creature {
 	private:
 		AiAgent* realObject;
 	};
+}
 }
 }
 }
