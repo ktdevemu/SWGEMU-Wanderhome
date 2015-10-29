@@ -148,7 +148,19 @@ end
 function FsPatrol:completeFsPatrol(pCreature)
 	local playerID = SceneObject(pCreature):getObjectID()
 	deleteData(playerID .. "completedCurrentPoint")
+	deleteData(playerID .. ":patrolWaypointsReached")
 	self:finish(pCreature)
+end
+
+function FsPatrol:onLoggedIn(pCreatureObject)
+	if (not self:hasTaskStarted(pCreatureObject)) then
+		return 1
+	end
+
+	CreatureObject(pCreatureObject):sendSystemMessage("@fs_quest_village:combat_quest_failed_timeout");
+	self:failPatrol(pCreatureObject)
+
+	return 1
 end
 
 return FsPatrol
