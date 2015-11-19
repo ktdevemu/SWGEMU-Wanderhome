@@ -310,10 +310,7 @@ void ChatManagerImplementation::handleChatRoomMessage(CreatureObject* sender, co
 			return;
 		}
 
-		if( senderGhost->isPrivileged() ){
-			String tag = PermissionLevelList::instance()->getPermissionTag(sender->getPlayerObject()->getAdminLevel()).toString();
-			fullName = name + " [" + tag + "]";
-		}
+		fullName = getTaggedName(senderGhost, name);
 	}
 
 	ChatRoom* channel = getChatRoom(roomID);
@@ -333,12 +330,7 @@ void ChatManagerImplementation::handleChatRoomMessage(CreatureObject* sender, co
 
 	ManagedReference<ChatRoom*> planetRoom = zone->getChatRoom();
 
-	BaseMessage* msg = NULL;
-
-	if (fullName == "")
-		msg = new ChatRoomMessage(name, formattedMessage, roomID);
-	else
-		msg = new ChatRoomMessage(fullName, formattedMessage, roomID);
+	BaseMessage* msg = new ChatRoomMessage(fullName, formattedMessage, roomID);
 
 	// Auction Chat, General Chat, and Planet Chat should adhere to player ignore list
 	if( auctionRoom != NULL && auctionRoom->getRoomID() == roomID ) {
@@ -507,7 +499,7 @@ void ChatManagerImplementation::broadcastGalaxy(const String& message, const Str
 	while (playerMap->hasNext(false)) {
 		ManagedReference<CreatureObject*> playerObject = playerMap->getNextValue(false);
 
-		if (playerObject->getFaction() == factionCRC || playerObject->getPlayerObject()->isPrivileged())
+		if (playerObject->getFaction() == factionCRC || playerObject->getPlayerObject()->hasGodMode())
 			playerObject->sendSystemMessage(message);
 	}
 }
@@ -554,7 +546,7 @@ void ChatManagerImplementation::broadcastMessage(BaseMessage* message) {
 void ChatManagerImplementation::broadcastMessage(CreatureObject* player, const UnicodeString& message,  uint64 target, uint32 moodid, uint32 mood2) {
 	Zone* zone = player->getZone();
 	PlayerObject* myGhost = NULL;
-	bool privileged = false;
+	bool godMode = false;
 
 	if (zone == NULL)
 		return;
@@ -576,8 +568,8 @@ void ChatManagerImplementation::broadcastMessage(CreatureObject* player, const U
 
 	if (myGhost)
 	{
-		if (myGhost->isPrivileged())
-			privileged = true;
+		if (myGhost->hasGodMode())
+			godMode = true;
 	}
 
 	StringIdChatParameter* param = NULL;
@@ -638,7 +630,7 @@ void ChatManagerImplementation::broadcastMessage(CreatureObject* player, const U
 					if (ghost == NULL)
 						continue;
 
-					if (!ghost->isIgnoring(firstName) || privileged) {
+					if (!ghost->isIgnoring(firstName) || godMode) {
 						SpatialChat* cmsg = NULL;
 
 						if (param == NULL) {
@@ -692,7 +684,7 @@ void ChatManagerImplementation::broadcastMessage(CreatureObject* player, const U
 void ChatManagerImplementation::broadcastMessage(CreatureObject* player, StringIdChatParameter& message,  uint64 target, uint32 moodid, uint32 mood2) {
 	Zone* zone = player->getZone();
 	PlayerObject* myGhost = NULL;
-	bool privileged = false;
+	bool godMode = false;
 
 	if (zone == NULL)
 		return;
@@ -713,8 +705,8 @@ void ChatManagerImplementation::broadcastMessage(CreatureObject* player, StringI
 		{
 			language = myGhost->getLanguageID();
 
-			if (myGhost->isPrivileged())
-				privileged = true;
+			if (myGhost->hasGodMode())
+				godMode = true;
 		}
 	}
 
@@ -750,7 +742,7 @@ void ChatManagerImplementation::broadcastMessage(CreatureObject* player, StringI
 					if (ghost == NULL)
 						continue;
 
-					if (!ghost->isIgnoring(firstName) || privileged) {
+					if (!ghost->isIgnoring(firstName) || godMode) {
 						SpatialChat* cmsg = new SpatialChat(player->getObjectID(), creature->getObjectID(), message, target, moodid, mood2);
 
 						creature->sendMessage(cmsg);
@@ -832,10 +824,12 @@ void ChatManagerImplementation::handleChatInstantMessageToCharacter(ChatInstantM
 
 	CreatureObject* sender = cast<CreatureObject*>(scene.get());
 
-	bool privileged = false;
+	bool godMode = false;
 
 	if (sender == NULL)
 		return;
+
+	String name = sender->getFirstName();
 
 	if (sender->isPlayerCreature()) {
 		ManagedReference<PlayerObject*> senderGhost = NULL;
@@ -844,8 +838,8 @@ void ChatManagerImplementation::handleChatInstantMessageToCharacter(ChatInstantM
 		if (senderGhost == NULL)
 			return;
 
-		if (senderGhost->isPrivileged())
-			privileged = true;
+		if (senderGhost->hasGodMode())
+			godMode = true;
 
 		if (senderGhost->isMuted()) {
 			String reason = senderGhost->getMutedReason();
@@ -857,6 +851,8 @@ void ChatManagerImplementation::handleChatInstantMessageToCharacter(ChatInstantM
 
 			return;
 		}
+
+		name = getTaggedName(senderGhost, name);
 	}
 
 	uint32 sequence = message->getSequence();
@@ -877,7 +873,7 @@ void ChatManagerImplementation::handleChatInstantMessageToCharacter(ChatInstantM
 		return;
 	}
 
-	if (receiver->getPlayerObject()->isIgnoring(sender->getFirstName()) && !privileged) {
+	if (receiver->getPlayerObject()->isIgnoring(sender->getFirstName()) && !godMode) {
 		BaseMessage* amsg = new ChatOnSendInstantMessage(sequence, IM_IGNORED);
 		sender->sendMessage(amsg);
 
@@ -894,12 +890,6 @@ void ChatManagerImplementation::handleChatInstantMessageToCharacter(ChatInstantM
 	}
 
 	text = formatMessage(text);
-
-	String name = sender->getFirstName();
-	if( privileged ){
-		String tag = PermissionLevelList::instance()->getPermissionTag(sender->getPlayerObject()->getAdminLevel()).toString();
-		name = name + " [" + tag + "]";
-	}
 
 	BaseMessage* msg = new ChatInstantMessageToClient("SWG", sender->getZoneServer()->getGalaxyName(), name, text);
 	receiver->sendMessage(msg);
@@ -970,10 +960,7 @@ void ChatManagerImplementation::handleGroupChat(CreatureObject* sender, const Un
 			return;
 		}
 
-		if( senderGhost->isPrivileged() ){
-			String tag = PermissionLevelList::instance()->getPermissionTag(sender->getPlayerObject()->getAdminLevel()).toString();
-			name = name + " [" + tag + "]";
-		}
+		name = getTaggedName(senderGhost, name);
 	}
 
 	ManagedReference<GroupObject*> group = sender->getGroup();
@@ -1032,10 +1019,7 @@ void ChatManagerImplementation::handleGuildChat(CreatureObject* sender, const Un
 			return;
 		}
 
-		if( senderGhost->isPrivileged() ){
-			String tag = PermissionLevelList::instance()->getPermissionTag(sender->getPlayerObject()->getAdminLevel()).toString();
-			name = name + " [" + tag + "]";
-		}
+		name = getTaggedName(senderGhost, name);
 	}
 
 	ManagedReference<GuildObject*> guild = sender->getGuildObject().get();
@@ -1081,10 +1065,7 @@ void ChatManagerImplementation::handlePlanetChat(CreatureObject* sender, const U
 			return;
 		}
 
-		if( senderGhost->isPrivileged() ){
-			String tag = PermissionLevelList::instance()->getPermissionTag(sender->getPlayerObject()->getAdminLevel()).toString();
-			fullName = name + " [" + tag + "]";
-		}
+		fullName = getTaggedName(senderGhost, name);
 	}
 
 	Zone* zone = sender->getZone();
@@ -1101,13 +1082,9 @@ void ChatManagerImplementation::handlePlanetChat(CreatureObject* sender, const U
 	UnicodeString formattedMessage(formatMessage(message));
 
 	ManagedReference<ChatRoom*> room = zone->getChatRoom();
-	BaseMessage* msg = NULL;
 
 	if (room != NULL) {
-		if (fullName == "")
-				msg = new ChatRoomMessage(name, formattedMessage, room->getRoomID());
-			else
-				msg = new ChatRoomMessage(fullName, formattedMessage, room->getRoomID());
+		BaseMessage* msg = new ChatRoomMessage(fullName, formattedMessage, room->getRoomID());
 
 		room->broadcastMessageCheckIgnore(msg, name);
 	}
@@ -1135,10 +1112,7 @@ void ChatManagerImplementation::handleAuctionChat(CreatureObject* sender, const 
 			return;
 		}
 
-		if( senderGhost->isPrivileged() ){
-			String tag = PermissionLevelList::instance()->getPermissionTag(sender->getPlayerObject()->getAdminLevel()).toString();
-			fullName = name + " [" + tag + "]";
-		}
+		fullName = getTaggedName(senderGhost, name);
 	}
 
 	StringTokenizer args(message.toString());
@@ -1149,13 +1123,8 @@ void ChatManagerImplementation::handleAuctionChat(CreatureObject* sender, const 
 
 	UnicodeString formattedMessage(formatMessage(message));
 
-	BaseMessage* msg = NULL;
-
 	if (auctionRoom != NULL) {
-		if (fullName == "")
-			msg = new ChatRoomMessage(name, formattedMessage, auctionRoom->getRoomID());
-		else
-			msg = new ChatRoomMessage(fullName, formattedMessage, auctionRoom->getRoomID());
+		BaseMessage* msg = new ChatRoomMessage(fullName, formattedMessage, auctionRoom->getRoomID());
 
 		auctionRoom->broadcastMessageCheckIgnore(msg, name);
 	}
@@ -1218,7 +1187,7 @@ int ChatManagerImplementation::sendMail(const String& sendername, const UnicodeS
 	uint64 receiverObjectID = playerManager->getObjectID(recipientName);
 	ManagedReference<SceneObject*> obj = server->getObject(receiverObjectID);
 	ManagedReference<CreatureObject*> sender = NULL;
-	bool privileged = false;
+	bool godMode = false;
 
 	if (obj == NULL || !obj->isPlayerCreature())
 		return IM_OFFLINE;
@@ -1237,15 +1206,15 @@ int ChatManagerImplementation::sendMail(const String& sendername, const UnicodeS
 			if (senderPlayer == NULL)
 				return IM_OFFLINE;
 
-			if (senderPlayer->isPrivileged())
-				privileged = true;
+			if (senderPlayer->hasGodMode())
+				godMode = true;
 		}
 	}
 
 	CreatureObject* receiver = cast<CreatureObject*>(obj.get());
 	PlayerObject* receiverPlayerObject = receiver->getPlayerObject();
 
-	if ((receiverPlayerObject == NULL) || (receiverPlayerObject->isIgnoring(sendername) && !privileged))
+	if ((receiverPlayerObject == NULL) || (receiverPlayerObject->isIgnoring(sendername) && !godMode))
 		return IM_IGNORED;
 
 	ManagedReference<PersistentMessage*> mail = new PersistentMessage();
@@ -1294,7 +1263,7 @@ int ChatManagerImplementation::sendMail(const String& sendername, const UnicodeS
 	uint64 receiverObjectID = playerManager->getObjectID(recipientName);
 	ManagedReference<SceneObject*> obj = server->getObject(receiverObjectID);
 	ManagedReference<CreatureObject*> sender = NULL;
-	bool privileged = false;
+	bool godMode = false;
 
 	if (obj == NULL || !obj->isPlayerCreature())
 		return IM_OFFLINE;
@@ -1311,15 +1280,15 @@ int ChatManagerImplementation::sendMail(const String& sendername, const UnicodeS
 			if (senderPlayer == NULL)
 				return IM_OFFLINE;
 
-			if (senderPlayer->isPrivileged())
-				privileged = true;
+			if (senderPlayer->hasGodMode())
+				godMode = true;
 		}
 	}
 
 	PlayerObject* ghost = receiver->getPlayerObject();
 
 	if (ghost == NULL ||
-			(ghost->isIgnoring(sendername) && !privileged))
+			(ghost->isIgnoring(sendername) && !godMode))
 		return IM_IGNORED;
 
 	ManagedReference<PersistentMessage*> mail = new PersistentMessage();
@@ -1444,6 +1413,17 @@ UnicodeString ChatManagerImplementation::formatMessage(const UnicodeString& mess
 	}
 
 	return text;
+}
+
+String ChatManagerImplementation::getTaggedName(PlayerObject* ghost, const String& name) {
+	String taggedName = name;
+
+	if (ghost->hasGodMode()) {
+		String tag = PermissionLevelList::instance()->getPermissionTag(ghost->getAdminLevel()).toString();
+		taggedName = name + " [" + tag + "]";
+	}
+
+	return taggedName;
 }
 
 void ChatManagerImplementation::loadSocialTypes() {

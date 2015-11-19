@@ -9,8 +9,6 @@ function villageSurveyorConvoHandler:getInitialScreen(pPlayer, pNpc, pConversati
 	local convoTemplate = LuaConversationTemplate(pConversationTemplate)
 	local phase = VillageJediManagerTownship:getCurrentPhase()
 
-	phase = 2 -- Temporary until phase 2 is enabled
-
 	if (phase ~= 2 and phase ~= 3) then
 		return convoTemplate:getScreen("intro_wrong_phase")
 	elseif (not CreatureObject(pPlayer):hasSkill("crafting_artisan_novice")) then
@@ -27,7 +25,11 @@ function villageSurveyorConvoHandler:getInitialScreen(pPlayer, pNpc, pConversati
 		return convoTemplate:getScreen("intro_in_progress")
 	end
 
-	return convoTemplate:getScreen("intro")
+	if (VillageJediManagerCommon.hasActiveQuestThisPhase(pPlayer)) then
+		return convoTemplate:getScreen("intro_has_another_quest")
+	else
+		return convoTemplate:getScreen("intro")
+	end
 end
 
 function villageSurveyorConvoHandler:runScreenHandlers(conversationTemplate, conversingPlayer, conversingNPC, selectedOption, conversationScreen)
@@ -47,7 +49,7 @@ function villageSurveyorConvoHandler:runScreenHandlers(conversationTemplate, con
 			return conversationScreen
 		end
 		local pQuest = getQuestInfo(hasQuest)
-		
+
 		local questTarget = LuaQuestInfo(pQuest):getQuestTarget()
 		clonedConversation:setDialogTextStringId("@quest/force_sensitive/fs_survey:sample_for_" .. questTarget)
 	elseif (screenID == "special_answer") then
@@ -57,10 +59,12 @@ function villageSurveyorConvoHandler:runScreenHandlers(conversationTemplate, con
 	elseif (screenID == "sample_phase_2") then
 		QuestManager.activateQuest(conversingPlayer, QuestManager.quests.SURVEY_PHASE2_MAIN)
 		QuestManager.activateQuest(conversingPlayer, QuestManager.quests.SURVEY_PHASE2_01)
+		VillageJediManagerCommon.setActiveQuestThisPhase(conversingPlayer)
 		createObserver(SAMPLE, "FsSurvey", "sampleEventHandler", conversingPlayer, 1)
 	elseif (screenID == "sample_phase_3") then
 		QuestManager.activateQuest(conversingPlayer, QuestManager.quests.SURVEY_PHASE3_MAIN)
 		QuestManager.activateQuest(conversingPlayer, QuestManager.quests.SURVEY_PHASE3_01)
+		VillageJediManagerCommon.setActiveQuestThisPhase(conversingPlayer)
 		createObserver(SAMPLE, "FsSurvey", "sampleEventHandler", conversingPlayer, 1)
 	end
 

@@ -772,7 +772,7 @@ void ResourceSpawner::sendResourceListForSurvey(CreatureObject* player,
 		if (!resourceSpawn->inShift())
 			continue;
 
-		if (resourceSpawn->getSurveyToolType() == toolType) {
+		if (resourceSpawn->getSurveyToolType() == toolType || (toolType == SurveyTool::INORGANIC && resourceSpawn->isType("inorganic"))) {
 			matchingResources.add(resourceSpawn);
 			message->addResource(resourceSpawn->getName(),
 					resourceSpawn->getType(), resourceSpawn->_getObjectID());
@@ -1045,7 +1045,7 @@ void ResourceSpawner::sendSampleResults(CreatureObject* player, const float dens
 		playerManager->awardExperience(player, "resource_harvesting_inorganic", xp, true);
 
 	addResourceToPlayerInventory(player, resourceSpawn, unitsExtracted);
-	player->notifyObservers(ObserverEventType::SAMPLE, resourceSpawn, density);
+	player->notifyObservers(ObserverEventType::SAMPLE, resourceSpawn, density * 100);
 
 	if (resourceSpawn->isType("radioactive")) {
 		int wound = int((sampleRate / 30) - System::random(7));
