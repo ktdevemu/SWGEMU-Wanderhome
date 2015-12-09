@@ -1,6 +1,6 @@
-kima_nazith = Creature:new {
+pooja_naberrie = Creature:new {
 	objectName = "",
-	customName = "Kima Nazith",
+	customName = "Pooja Naberrie",
 	socialGroup = "townsperson",
 	faction = "townsperson",
 	level = 100,
@@ -23,15 +23,16 @@ kima_nazith = Creature:new {
 	ferocity = 0,
 	pvpBitmask = NONE,
 	creatureBitmask = PACK,
-	optionsBitmask = 128,
+	optionsBitmask = 264,
 	diet = HERBIVORE,
 
-	templates = {"object/mobile/dressed_noble_fat_human_female_02.iff"},
+	templates = {"object/mobile/dressed_pooja_naberrie.iff"},
 	lootGroups = {},
 	weapons = {},
-	conversationTemplate = "",
-	attacks = {
-	}
+	conversationTemplate = "pooja_naberrie_mission_giver_convotemplate",
+	attacks = {},
 }
 
-CreatureTemplates:addCreatureTemplate(kima_nazith, "kima_nazith")
+CreatureTemplates:addCreatureTemplate(pooja_naberrie, "pooja_naberrie")
+
+

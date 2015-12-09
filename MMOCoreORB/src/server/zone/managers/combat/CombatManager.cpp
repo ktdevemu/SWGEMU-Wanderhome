@@ -1611,6 +1611,7 @@ bool CombatManager::applySpecialAttackCost(CreatureObject* attacker, WeaponObjec
 				return false;
 			} else {
 				playerObject->setForcePower(playerObject->getForcePower() - force);
+				VisibilityManager::instance()->increaseVisibility(attacker); // Give visibility
 			}
 		}
 	}
@@ -2361,7 +2362,13 @@ int CombatManager::doAreaCombatAction(CreatureObject* attacker, WeaponObject* we
 	int range = data.getAreaRange();
 
 	if (data.getCommand()->isConeAction()) {
-		range = data.getRange();
+		int coneRange = data.getConeRange();
+
+		if(coneRange > -1) {
+			range = coneRange;
+		} else {
+			range = data.getRange();
+		}
 	}
 
 	if (range < 0) {

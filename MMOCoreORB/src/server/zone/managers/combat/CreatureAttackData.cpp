@@ -55,6 +55,7 @@ CreatureAttackData::CreatureAttackData(const CreatureAttackData& data) {
 
 	range = data.range;
 	coneAngle = data.coneAngle;
+	coneRange = data.coneRange;
 	areaRange = data.areaRange;
 
 	animationCRC = data.animationCRC;
@@ -82,6 +83,7 @@ void CreatureAttackData::fillFromBase() {
 	stateEffects = baseCommand->getStateEffects();
 	dotEffects = baseCommand->getDotEffects();
 	coneAngle = baseCommand->getConeAngle();
+	coneRange = baseCommand->getConeRange();
 	range = baseCommand->getRange();
 	areaRange = baseCommand->getAreaRange();
 	animationCRC = baseCommand->getAnimationCRC();

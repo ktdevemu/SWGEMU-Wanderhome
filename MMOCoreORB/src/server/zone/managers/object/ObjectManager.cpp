@@ -110,6 +110,7 @@ void ObjectManager::registerObjectTypes() {
 	objectFactory.registerObject<IntangibleObject>(SceneObjectType::INTANGIBLE);
 	objectFactory.registerObject<IntangibleObject>(SceneObjectType::DATA2);
 	objectFactory.registerObject<TheaterObject>(SceneObjectType::THEATEROBJECT);
+	objectFactory.registerObject<TangibleObject>(SceneObjectType::EVENTPERK);
 
 	objectFactory.registerObject<ArmorObject>(SceneObjectType::ARMOR);
 	objectFactory.registerObject<ArmorObject>(SceneObjectType::BODYARMOR); //chest plates
@@ -229,6 +230,8 @@ void ObjectManager::registerObjectTypes() {
 	objectFactory.registerObject<GuildTerminal>(SceneObjectType::GUILDTERMINAL);
 	objectFactory.registerObject<Jukebox>(SceneObjectType::JUKEBOX);
 	objectFactory.registerObject<FlagGame>(SceneObjectType::FLAGGAME);
+	objectFactory.registerObject<LotteryDroid>(SceneObjectType::LOTTERYDROID);
+	objectFactory.registerObject<ScavengerChest>(SceneObjectType::SCAVENGERCHEST);
 	objectFactory.registerObject<GamblingTerminal>(SceneObjectType::GAMBLINGTERMINAL);
 	objectFactory.registerObject<Terminal>(SceneObjectType::CLONING);
 
